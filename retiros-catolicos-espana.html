@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Retiros católicos en España · próximos 3 meses</title>
+<meta name="description" content="Agenda autoactualizable de retiros, ejercicios espirituales, Emaús y Effetá en España para los próximos tres meses.">
+<style>
+:root{
+  --bg:#f6f1e7; --paper:#fffdf8; --ink:#2a2320; --muted:#6f645c; --line:#e4d9c6;
+  --accent:#7a1f2b; --accent-soft:#f3e3e3; --gold:#b8892f; --gold-soft:#f5ead2;
+  --ok:#2f6b3a; --warn:#9a6a00; --err:#a3312f;
+  --shadow:0 1px 2px rgba(60,40,20,.06),0 4px 16px rgba(60,40,20,.06);
+  --radius:14px;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1b1715; --paper:#241f1c; --ink:#efe7db; --muted:#b3a697; --line:#3a322c;
+    --accent:#e0808c; --accent-soft:#3b2226; --gold:#d9ae57; --gold-soft:#3a3020;
+    --ok:#7cc48a; --warn:#e2b44f; --err:#f08a84; --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1b1715; --paper:#241f1c; --ink:#efe7db; --muted:#b3a697; --line:#3a322c;
+  --accent:#e0808c; --accent-soft:#3b2226; --gold:#d9ae57; --gold-soft:#3a3020;
+  --ok:#7cc48a; --warn:#e2b44f; --err:#f08a84; --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+button,select,input{font:inherit;color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+
+/* Header */
+header.hero{border-bottom:1px solid var(--line);background:
+  radial-gradient(1200px 300px at 10% -40%, var(--gold-soft), transparent 70%), var(--bg)}
+.hero .wrap{padding-top:28px;padding-bottom:20px}
+.kicker{font:600 12px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+h1{font:600 clamp(28px,4.4vw,44px)/1.08 var(--serif);margin:.35em 0 .25em;letter-spacing:-.01em}
+h1 .cross{color:var(--accent);font-weight:400;margin-right:.18em}
+.sub{color:var(--muted);max-width:720px;margin:0}
+.statusbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:18px}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;background:var(--paper);border:1px solid var(--line);font-size:13px;box-shadow:var(--shadow)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+.dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)} .dot.err{background:var(--err)}
+.dot.spin{background:var(--gold);animation:pulse 1s infinite ease-in-out}
+@keyframes pulse{50%{opacity:.25}}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:999px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:600}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn:disabled{opacity:.55;cursor:progress}
+.btn:focus-visible,.seg button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* Controls */
+.controls{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+.controls .wrap{display:grid;grid-template-columns:2fr repeat(4,1fr) auto;gap:10px;padding-top:12px;padding-bottom:12px;align-items:center}
+.field{display:flex;flex-direction:column;gap:3px;min-width:0}
+.field label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.field input,.field select{width:100%;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--paper)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--paper);align-self:end}
+.seg button{border:0;background:transparent;padding:8px 12px;cursor:pointer;font-size:13px}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+@media (max-width:900px){
+  .controls .wrap{grid-template-columns:1fr 1fr}
+  .controls .field.search{grid-column:1/-1}
+  .controls .seg{grid-column:1/-1;justify-self:start}
+}
+
+/* Summary */
+.summary{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:baseline;justify-content:space-between;margin:18px 0 8px}
+.summary h2{font:600 20px/1.2 var(--serif);margin:0}
+.summary .meta{color:var(--muted);font-size:13px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12px;padding:3px 9px;border-radius:999px;background:var(--gold-soft);color:var(--ink);border:1px solid var(--line);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* List */
+.month-h{font:600 15px/1 var(--serif);color:var(--accent);margin:26px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line);text-transform:capitalize;display:flex;justify-content:space-between}
+.month-h span{color:var(--muted);font:12px var(--sans)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+@media (max-width:420px){.grid{grid-template-columns:1fr}}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 14px 12px;display:grid;grid-template-columns:62px 1fr;gap:12px;position:relative}
+.date{text-align:center;border-radius:10px;background:var(--accent-soft);padding:8px 4px;align-self:start}
+.date .d{font:600 24px/1 var(--serif);color:var(--accent)}
+.date .m{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:3px}
+.date .span{font-size:10.5px;color:var(--muted);margin-top:5px;line-height:1.2}
+.card h3{font:600 16px/1.3 var(--serif);margin:0 0 4px}
+.card .where,.card .who{font-size:13px;color:var(--muted);margin:2px 0}
+.card .desc{font-size:13px;margin:6px 0 0;color:var(--ink);opacity:.9;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.tag{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--muted)}
+.tag.type{border-color:transparent;background:var(--gold-soft);color:var(--ink)}
+.tag.live{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 40%,transparent)}
+.tag.check{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 40%,transparent)}
+.tag.now{color:#fff;background:var(--accent);border-color:var(--accent)}
+.actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;font-size:13px}
+.actions a,.actions button{background:none;border:0;padding:0;color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.empty{padding:40px 20px;text-align:center;color:var(--muted);background:var(--paper);border:1px dashed var(--line);border-radius:var(--radius)}
+
+/* Calendar */
+.cal-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin-top:8px}
+.cal{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:12px;box-shadow:var(--shadow)}
+.cal h4{font:600 16px/1 var(--serif);margin:2px 0 10px;text-transform:capitalize;color:var(--accent)}
+.cal table{width:100%;border-collapse:collapse;table-layout:fixed}
+.cal th{font-size:10.5px;color:var(--muted);font-weight:600;padding:2px 0 6px;text-transform:uppercase}
+.cal td{height:44px;vertical-align:top;border-top:1px solid var(--line);padding:3px;font-size:12px;position:relative}
+.cal td.out{opacity:.3}
+.cal td .n{font-size:11px;color:var(--muted)}
+.cal td.today .n{color:#fff;background:var(--accent);border-radius:6px;padding:0 5px}
+.cal td button{all:unset;cursor:pointer;display:block;width:100%;height:100%}
+.cal td.has{background:linear-gradient(0deg,var(--accent-soft),transparent)}
+.cal td.sel{outline:2px solid var(--gold);outline-offset:-2px;border-radius:6px}
+.bars{display:flex;flex-wrap:wrap;gap:2px;margin-top:3px}
+.bar{height:5px;border-radius:3px;background:var(--accent);flex:1 1 30%;min-width:6px;opacity:.85}
+.bar.t-emaus{background:#2f6b8f}.bar.t-effeta{background:#3f8a5a}.bar.t-adviento{background:#6a4a9e}.bar.t-evd{background:var(--gold)}
+.cnt{position:absolute;right:4px;top:3px;font-size:10px;color:var(--accent);font-weight:700}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted);margin:10px 0 0}
+.legend i{display:inline-block;width:14px;height:5px;border-radius:3px;margin-right:5px;vertical-align:middle}
+
+/* Sources panel */
+details.sources{margin:30px 0 10px;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px}
+details.sources summary{cursor:pointer;font-weight:600}
+.src{display:grid;grid-template-columns:14px 1fr auto;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+.src:first-of-type{border-top:0}
+.src small{color:var(--muted);display:block}
+.addsrc{display:grid;grid-template-columns:1fr 160px auto;gap:8px;margin-top:10px}
+@media (max-width:640px){.addsrc{grid-template-columns:1fr}}
+.addsrc input,.addsrc select{padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg)}
+footer{color:var(--muted);font-size:12.5px;padding:18px 0 40px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:13px;box-shadow:var(--shadow);opacity:0;transition:opacity .25s;pointer-events:none;z-index:20}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker">Agenda viva · España</div>
+    <h1><span class="cross" aria-hidden="true">✠</span>Retiros católicos, próximos 3 meses</h1>
+    <p class="sub">Ejercicios espirituales, retiros de silencio, Emaús, Effetá y retiros de Adviento. Al abrir esta página se consultan las fuentes en línea y se combinan con una base verificada; la ventana de fechas se recalcula sola cada día.</p>
+    <div class="statusbar">
+      <span class="pill" id="statusPill"><span class="dot spin" id="statusDot"></span><span id="statusText">Actualizando fuentes…</span></span>
+      <span class="pill" id="windowPill">—</span>
+      <button class="btn" id="refreshBtn" type="button">↻ Actualizar ahora</button>
+      <button class="btn ghost" id="exportBtn" type="button">Exportar a calendario (.ics)</button>
+      <button class="btn ghost" id="themeBtn" type="button" aria-label="Cambiar tema claro u oscuro">◐ Tema</button>
+    </div>
+  </div>
+</header>
+
+<div class="controls" role="search">
+  <div class="wrap">
+    <div class="field search">
+      <label for="q">Buscar</label>
+      <input id="q" type="search" placeholder="Título, casa, ciudad, director…" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="fRegion">Comunidad</label>
+      <select id="fRegion"><option value="">Todas</option></select>
+    </div>
+    <div class="field">
+      <label for="fType">Tipo</label>
+      <select id="fType"><option value="">Todos</option></select>
+    </div>
+    <div class="field">
+      <label for="fAud">Para</label>
+      <select id="fAud"><option value="">Cualquiera</option></select>
+    </div>
+    <div class="field">
+      <label for="fMonth">Mes</label>
+      <select id="fMonth"><option value="">Los 3 meses</option></select>
+    </div>
+    <div class="seg" role="group" aria-label="Vista">
+      <button type="button" data-view="list" aria-pressed="true">Lista</button>
+      <button type="button" data-view="cal" aria-pressed="false">Calendario</button>
+    </div>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="summary">
+    <h2 id="countTitle">Cargando…</h2>
+    <div class="chips" id="quickChips" aria-label="Filtros rápidos"></div>
+  </div>
+  <div id="dayFilterNote" class="meta" hidden></div>
+  <section id="listView" aria-live="polite"></section>
+  <section id="calView" hidden></section>
+
+  <details class="sources" id="sourcesPanel">
+    <summary>Fuentes y estado de la actualización</summary>
+    <div id="sourcesList"></div>
+    <p class="meta" style="font-size:13px;color:var(--muted);margin:12px 0 4px">¿Conoces otra casa de ejercicios o diócesis que publique su agenda? Añade su calendario iCal (.ics) o su web WordPress con «The Events Calendar». Se guardará en este navegador y se consultará cada vez que abras la página.</p>
+    <form class="addsrc" id="addSrcForm">
+      <input id="newSrcUrl" type="url" placeholder="https://… (feed .ics o web WordPress)" required aria-label="URL de la fuente">
+      <select id="newSrcType" aria-label="Tipo de fuente">
+        <option value="ics">Calendario iCal (.ics)</option>
+        <option value="tribe">WordPress · Events Calendar</option>
+      </select>
+      <button class="btn" type="submit">Añadir fuente</button>
+    </form>
+  </details>
+</main>
+
+<footer class="wrap">
+  <p>Los datos proceden de las webs de los organizadores. Confirma siempre fechas, precio y plazas con el organizador antes de inscribirte. Las entradas marcadas «verificar» se detectaron automáticamente en noticias y pueden contener errores.</p>
+  <p id="buildInfo"></p>
+</footer>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+"use strict";
+/* ==========================================================
+   CONFIGURACIÓN
+   ========================================================== */
+const WINDOW_MONTHS = 3;                 // ventana de búsqueda
+const REFRESH_EVERY_MS = 6 * 3600e3;     // si la página se queda abierta
+const FETCH_TIMEOUT_MS = 20000;
+const SEED_BUILT = "2026-09-28";
+
+// Proxies CORS públicos, usados solo si la petición directa falla.
+const PROXIES = [
+  u => "https://corsproxy.io/?url=" + encodeURIComponent(u),
+  u => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u),
+  u => "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(u),
+];
+
+// Fuentes en vivo
+const BUILTIN_SOURCES = [
+  { id:"sdf", name:"Jesuitas · Servicio de la Fe (buscador de Ejercicios)", type:"tribe",
+    base:"https://serviciodelafe.es", home:"https://serviciodelafe.es/buscador-ejercicios/" },
+  { id:"getafe", name:"Diócesis de Getafe · Calendario de Ejercicios Espirituales", type:"ics",
+    url:"https://ics.teamup.com/feed/ksv44p58jawd5zvrm4/0.ics", home:"https://cerrodelosangeles.es/eventos/ejercicios-espirituales/",
+    organizerFallback:"Delegación de Espiritualidad (Getafe)" },
+  { id:"emaus", name:"emaús.es · noticias de retiros Emaús / Effetá / Bartimeo", type:"wpposts",
+    base:"https://xn--emas-sra.es", home:"https://xn--emas-sra.es/", verify:true },
+  { id:"news", name:"Google Noticias · «retiro» / «ejercicios espirituales» (experimental)", type:"rss",
+    url:"https://news.google.com/rss/search?q=%28retiro+OR+%22ejercicios+espirituales%22+OR+Emaus+OR+Effeta%29+cat%C3%B3lico+when%3A60d&hl=es&gl=ES&ceid=ES:es",
+    home:"https://news.google.com/", verify:true, proxyOnly:true },
+];
+
+/* ==========================================================
+   DATOS BASE VERIFICADOS (28/09/2026)
+   Se muestran siempre; las fuentes en vivo los completan o sustituyen.
+   ========================================================== */
+const SEED = [
+ {title:"Ejercicios en la Vida Diaria – Centro Loyola Bilbao",start:"2026-09-01",end:"2027-06-30",place:"Centro Loyola Bilbao",city:"Bilbao",province:"Bizkaia",organizer:"Mariado Gorriz RSC, Javier López SJ y Teresa Gomeza",type:"evd",audience:"todos",url:"https://serviciodelafe.es/event/ejercicios-en-la-vida-diaria-centro-loyola-bilbao/",src:"sdf",desc:"Ejercicios personalizados en la vida diaria, con acompañamiento."},
+ {title:"Ejercicios Espirituales en la Vida Diaria – ACHEESIL (Sevilla y Huelva)",start:"2026-09-01",end:"2027-06-30",place:"Sevilla y Huelva",city:"Sevilla",province:"Sevilla",organizer:"ACHEESIL",type:"evd",audience:"todos",url:"https://serviciodelafe.es/event/ejercicios-espirituales-en-la-vida-diaria-acheesil-sevilla-y-huelva/",src:"sdf",desc:"Ejercicios personalizados en la vida diaria."},
+ {title:"Ejercicios en la Vida Diaria y Seminario de Espiritualidad – Almería",start:"2026-10-01",end:"2027-06-30",place:"Parroquia San Ignacio de Loyola",city:"Almería",province:"Almería",organizer:"María del Mar Gil y equipo de acompañantes",type:"evd",audience:"todos",url:"https://serviciodelafe.es/event/ejercicios-en-la-vida-diaria-y-seminario-de-espiritualidad-almeria/",src:"sdf",desc:"Presencial en Almería o en línea; de iniciación, con acompañamiento individual."},
+ {title:"Ejercicios de 8 días para religiosos y laicos en Madrid",start:"2026-10-02",end:"2026-10-11",place:"C.E. Santa Rafaela María (Pº General Martínez Campos, 12)",city:"Madrid",province:"Madrid",organizer:"Ignacio Dinnbier SJ",type:"ejercicios",audience:"todos",url:"https://serviciodelafe.es/event/ejercicios-de-8-dias-para-religiosos-y-laicos-en-madrid-octubre-2026/",src:"sdf",desc:"En silencio, para personas con experiencia en Ejercicios ignacianos. De la cena del 2 al desayuno del 11."},
+ {title:"Ejercicios Espirituales (D. Pablo de Haro)",start:"2026-10-09",end:"2026-10-11",place:"Casa «Santa Mónica»",city:"Becerril de la Sierra",province:"Madrid",organizer:"Vicaría para el Cerro de los Ángeles (Diócesis de Getafe)",type:"ejercicios",audience:"todos",price:"130 €",url:"https://teamup.com/ksv44p58jawd5zvrm4/events/2096515151",src:"getafe",desc:"36 plazas disponibles."},
+ {title:"Ejercicios Espirituales (Instituto Cristo Rey)",start:"2026-10-09",end:"2026-10-12",place:"Casa de oración «La Concepción»",city:"Navas de Riofrío",province:"Segovia",organizer:"Instituto Cristo Rey – Argentina",type:"ejercicios",audience:"todos",price:"220 €",url:"https://teamup.com/ksv44p58jawd5zvrm4/events/2011752481",src:"getafe",desc:"Todas las edades, ambos sexos. Tel. 643 64 77 57."},
+ {title:"Ejercicios espirituales para jóvenes · «Un tiempo para estar con Dios» (3ª tanda)",start:"2026-10-09",end:"2026-10-12",place:"Lugar según convocatoria",city:"Santiago de Compostela",province:"A Coruña",organizer:"Arzobispado de Santiago · Pastoral Xuvenil",type:"ejercicios",audience:"jovenes",price:"50 € estudiantes / 90 € trabajadores",url:"https://depasxuventude.com/ejercicios-espirituales-2026-un-tiempo-para-estar-con-dios/",src:"seed"},
+ {title:"Retiro de Emaús (Sant Oleguer)",start:"2026-10-16",end:"2026-10-18",place:"Casa Betània",city:"Cornellà de Llobregat",province:"Barcelona",organizer:"Parroquia Sant Oleguer",type:"emaus",audience:"adultos",url:"https://www.santoleguer.es/retiro-emaus/",src:"seed",desc:"Inscripciones abiertas. De viernes tarde a domingo tarde."},
+ {title:"VI Retiro de Effetá (Diócesis de Vitoria)",start:"2026-10-16",end:"2026-10-18",place:"Monasterio de Santa María de Bujedo",city:"Bujedo (Miranda de Ebro)",province:"Burgos",organizer:"Diócesis de Vitoria",type:"effeta",audience:"jovenes",url:"https://diocesisvitoria.org/nueva-edicion-de-effeta-retiro-de-jovenes-para-jovenes/",src:"seed",desc:"Para jóvenes. Contacto: effetaalava@gmail.com."},
+ {title:"«Experiencia Loyola»: iniciación a los Ejercicios",start:"2026-10-16",end:"2026-10-18",place:"C.E. La Inmaculada (Camino de la Bermeja, 1)",city:"El Puerto de Santa María",province:"Cádiz",organizer:"Equipo Experiencia Loyola",type:"ejercicios",audience:"todos",price:"140 €",url:"https://serviciodelafe.es/event/ejercicios-de-fin-de-semana-experiencia-loyola-en-el-puerto-octubre-2026/",src:"sdf",desc:"Ejercicios completos en seis fines de semana, en silencio y con acompañamiento personal."},
+ {title:"Ejercicios de 8 días en El Puerto",start:"2026-10-21",end:"2026-10-30",place:"C.E. La Inmaculada",city:"El Puerto de Santa María",province:"Cádiz",organizer:"David Fagundo SJ",type:"ejercicios",audience:"todos",url:"https://serviciodelafe.es/event/ejercicios-de-8-dias-en-el-puerto-octubre-2026/",src:"sdf",desc:"Para religiosos y laicos con experiencia en la oración ignaciana. Plazas limitadas."},
+ {title:"Ejercicios de 8 días para jesuitas",start:"2026-10-21",end:"2026-10-30",place:"C.E. La Inmaculada",city:"El Puerto de Santa María",province:"Cádiz",organizer:"Pedro García Vera SJ",type:"ejercicios",audience:"clero",url:"https://serviciodelafe.es/event/ejercicios-de-8-dias-para-jesuitas-en-el-puerto-de-santa-maria-octubre-2026/",src:"sdf"},
+ {title:"Ejercicios de fin de semana en Loyola",start:"2026-10-23",end:"2026-10-25",place:"Centro de Espiritualidad de Loyola",city:"Azpeitia",province:"Gipuzkoa",organizer:"Equipo Centro Loyola",type:"ejercicios",audience:"todos",url:"https://serviciodelafe.es/event/ejercicios-de-fin-de-semana-en-loyola-octubre-2026/",src:"sdf",desc:"Iniciación: puntos en grupo y acompañamiento personal."},
+ {title:"Retiro de Emaús de hombres (Tres Olivos)",start:"2026-10-23",end:"2026-10-25",place:"Parroquia Beata María Ana Mogas",city:"Madrid",province:"Madrid",organizer:"Parroquia Beata María Ana Mogas",type:"emaus",audience:"hombres",url:"https://anamogas.archimadrid.es/grupos-y-retiros-de-emaus-para-hombres-y-mujeres/",src:"seed",desc:"Contacto: emaushombrestresolivos@gmail.com."},
+ {title:"Ejercicios personalizados de tres días en Sevilla",start:"2026-10-30",end:"2026-11-02",place:"Convento del Espíritu Santo (C/ Dueñas, 1)",city:"Sevilla",province:"Sevilla",organizer:"Centro Arrupe y CVX Sevilla",type:"ejercicios",audience:"todos",url:"https://serviciodelafe.es/event/eeee-personalizados-de-tres-dias-en-sevilla-2/",src:"sdf",desc:"Cada participante con acompañante propio."},
+ {title:"Ejercicios de 8 días para religiosos y laicos en Madrid",start:"2026-11-02",end:"2026-11-11",place:"C.E. Santa Rafaela María",city:"Madrid",province:"Madrid",organizer:"Jorge Vázquez SJ",type:"ejercicios",audience:"todos",url:"https://serviciodelafe.es/event/ejercicios-de-8-dias-para-religiosos-y-laicos-en-madrid-noviembre-2026/",src:"sdf",desc:"En silencio, para personas con experiencia en Ejercicios ignacianos."},
+ {title:"Ejercicios de fin de semana en Loyola",start:"2026-11-06",end:"2026-11-08",place:"Centro de Espiritualidad de Loyola",city:"Azpeitia",province:"Gipuzkoa",organizer:"Equipo Centro Loyola",type:"ejercicios",audience:"todos",url:"https://serviciodelafe.es/event/ejercicios-de-fin-de-semana-en-loyola-2/",src:"sdf"},
+ {title:"Ejercicios espirituales breves en Javier",start:"2026-11-13",end:"2026-11-15",place:"Casa de ejercicios de Javier",city:"Javier",province:"Navarra",organizer:"CVX Pamplona, Jesuitas y Jesuitinas",type:"ejercicios",audience:"todos",url:"https://serviciodelafe.es/event/ejercicios-espirituales-breves-en-javier-navarra-2/",src:"sdf",desc:"Inscripción: secretaria.javier@jesuitas.es"},
+ {title:"Retiro de Effetá (Santiago de Compostela)",start:"2026-11-13",end:"2026-11-15",place:"Casa Diocesana de Ejercicios Espirituales",city:"Santiago de Compostela",province:"A Coruña",organizer:"Delegación de Infancia y Juventud de Santiago",type:"effeta",audience:"jovenes",url:"https://www.pastoralsantiago.org/retiro-de-effeta-de-la-dix-santiago-noviembre-2026-inscripcion-para-caminantes-2/",src:"seed",desc:"Contacto: effetasantiago@depasxuventude.com."},
+ {title:"Retiro de Emaús de hombres (San Germán)",start:"2026-11-27",end:"2026-11-29",place:"Parroquia de San Germán",city:"Madrid",province:"Madrid",organizer:"Parroquia de San Germán",type:"emaus",audience:"hombres",url:"https://emaussangerman.com/proximo-retiro/",src:"seed",desc:"Preinscripción en la web. Contacto: emaushombres.sangerman@gmail.com."},
+ {title:"Retiro diocesano de Adviento",start:"2026-11-28",end:"2026-11-28",place:"A Raíña",city:"Mesía",province:"A Coruña",organizer:"Archidiócesis de Santiago de Compostela",type:"adviento",audience:"todos",price:"Gratuito",url:"https://delegacionclero.archicompostela.es/la-archidiocesis-de-santiago-programa-cuatro-retiros-diocesanos-para-el-curso-2026-2027/",src:"seed",desc:"Para sacerdotes, religiosos y laicos."},
+ {title:"Ejercicios Espirituales (Instituto Cristo Rey)",start:"2026-12-03",end:"2026-12-08",place:"Casa de Espiritualidad «San José»",city:"Cabezuela del Valle",province:"Cáceres",organizer:"Instituto Cristo Rey – Argentina",type:"ejercicios",audience:"todos",price:"325 €",url:"https://teamup.com/ksv44p58jawd5zvrm4/events/2011753779",src:"getafe",desc:"Todas las edades, ambos sexos. Tel. 643 64 77 57."},
+ {title:"Retiro de Emaús de hombres (Las Rozas)",start:"2026-12-04",end:"2026-12-06",place:"Parroquia de San Miguel Arcángel",city:"Las Rozas de Madrid",province:"Madrid",organizer:"Parroquia de San Miguel Arcángel",type:"emaus",audience:"hombres",url:"https://sanmiguelrozas.archimadrid.es/retiro-de-emaus/",src:"seed",desc:"VII retiro de hombres."},
+ {title:"Ejercicios Espirituales de Navidad",start:"2026-12-26",end:"2026-12-30",place:"Navas de Riofrío",city:"Navas de Riofrío",province:"Segovia",organizer:"Vicaría para el Cerro de los Ángeles (Diócesis de Getafe)",type:"ejercicios",audience:"todos",price:"≈280 €",url:"https://teamup.com/ksv44p58jawd5zvrm4/events/2086621234",src:"getafe",desc:"Inscripción 1–2 meses antes; predicador por confirmar."},
+ {title:"Retiro diocesano de Navidad",start:"2027-01-02",end:"2027-01-02",place:"Lugar por confirmar",city:"Santiago de Compostela",province:"A Coruña",organizer:"Archidiócesis de Santiago de Compostela",type:"adviento",audience:"todos",price:"Gratuito",url:"https://delegacionclero.archicompostela.es/la-archidiocesis-de-santiago-programa-cuatro-retiros-diocesanos-para-el-curso-2026-2027/",src:"seed"},
+ {title:"Ejercicios Espirituales",start:"2027-01-08",end:"2027-01-10",place:"Casa «Santa Mónica»",city:"Becerril de la Sierra",province:"Madrid",organizer:"Vicaría para el Cerro de los Ángeles (Diócesis de Getafe)",type:"ejercicios",audience:"todos",price:"130 €",url:"https://teamup.com/ksv44p58jawd5zvrm4/events/2096515438",src:"getafe",desc:"Inscripción aprox. un mes antes; 36 plazas."},
+];
+
+/* ==========================================================
+   GEOGRAFÍA
+   ========================================================== */
+const norm = s => (s||"").toString().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9ñ ]+/g," ").replace(/\s+/g," ").trim();
+const PROV = { // provincia normalizada -> [nombre, comunidad]
+ "a coruna":["A Coruña","Galicia"],"la coruna":["A Coruña","Galicia"],"coruna":["A Coruña","Galicia"],"lugo":["Lugo","Galicia"],"ourense":["Ourense","Galicia"],"orense":["Ourense","Galicia"],"pontevedra":["Pontevedra","Galicia"],
+ "asturias":["Asturias","Asturias"],"cantabria":["Cantabria","Cantabria"],
+ "bizkaia":["Bizkaia","País Vasco"],"vizcaya":["Bizkaia","País Vasco"],"gipuzkoa":["Gipuzkoa","País Vasco"],"guipuzcoa":["Gipuzkoa","País Vasco"],"alava":["Álava","País Vasco"],"araba":["Álava","País Vasco"],
+ "navarra":["Navarra","Navarra"],"la rioja":["La Rioja","La Rioja"],"rioja":["La Rioja","La Rioja"],
+ "huesca":["Huesca","Aragón"],"zaragoza":["Zaragoza","Aragón"],"teruel":["Teruel","Aragón"],
+ "barcelona":["Barcelona","Cataluña"],"girona":["Girona","Cataluña"],"gerona":["Girona","Cataluña"],"lleida":["Lleida","Cataluña"],"lerida":["Lleida","Cataluña"],"tarragona":["Tarragona","Cataluña"],
+ "madrid":["Madrid","Comunidad de Madrid"],"comunidad de madrid":["Madrid","Comunidad de Madrid"],
+ "avila":["Ávila","Castilla y León"],"burgos":["Burgos","Castilla y León"],"leon":["León","Castilla y León"],"palencia":["Palencia","Castilla y León"],"salamanca":["Salamanca","Castilla y León"],"segovia":["Segovia","Castilla y León"],"soria":["Soria","Castilla y León"],"valladolid":["Valladolid","Castilla y León"],"zamora":["Zamora","Castilla y León"],
+ "albacete":["Albacete","Castilla-La Mancha"],"ciudad real":["Ciudad Real","Castilla-La Mancha"],"cuenca":["Cuenca","Castilla-La Mancha"],"guadalajara":["Guadalajara","Castilla-La Mancha"],"toledo":["Toledo","Castilla-La Mancha"],
+ "caceres":["Cáceres","Extremadura"],"badajoz":["Badajoz","Extremadura"],
+ "valencia":["Valencia","Comunitat Valenciana"],"alicante":["Alicante","Comunitat Valenciana"],"castellon":["Castellón","Comunitat Valenciana"],
+ "murcia":["Murcia","Región de Murcia"],
+ "almeria":["Almería","Andalucía"],"cadiz":["Cádiz","Andalucía"],"cordoba":["Córdoba","Andalucía"],"granada":["Granada","Andalucía"],"huelva":["Huelva","Andalucía"],"jaen":["Jaén","Andalucía"],"malaga":["Málaga","Andalucía"],"sevilla":["Sevilla","Andalucía"],
+ "baleares":["Illes Balears","Illes Balears"],"illes balears":["Illes Balears","Illes Balears"],"mallorca":["Illes Balears","Illes Balears"],"menorca":["Illes Balears","Illes Balears"],"ibiza":["Illes Balears","Illes Balears"],
+ "las palmas":["Las Palmas","Canarias"],"gran canaria":["Las Palmas","Canarias"],"santa cruz de tenerife":["S. C. de Tenerife","Canarias"],"tenerife":["S. C. de Tenerife","Canarias"],
+ "ceuta":["Ceuta","Ceuta"],"melilla":["Melilla","Melilla"]
+};
+const CITY = { // ciudades frecuentes -> clave de provincia
+ "bilbao":"bizkaia","donostia":"gipuzkoa","san sebastian":"gipuzkoa","azpeitia":"gipuzkoa","loyola":"gipuzkoa","vitoria":"alava","gasteiz":"alava","pamplona":"navarra","javier":"navarra","logrono":"la rioja",
+ "santiago de compostela":"a coruna","vigo":"pontevedra","gijon":"asturias","oviedo":"asturias","covadonga":"asturias","santander":"cantabria",
+ "manresa":"barcelona","montserrat":"barcelona","sant cugat":"barcelona","cornella":"barcelona","terrassa":"barcelona","vic":"barcelona",
+ "getafe":"madrid","alcala de henares":"madrid","pozuelo":"madrid","las rozas":"madrid","majadahonda":"madrid","el escorial":"madrid","becerril de la sierra":"madrid","boadilla":"madrid","alcobendas":"madrid",
+ "navas de riofrio":"segovia","miranda de ebro":"burgos","bujedo":"burgos","villagarcia de campos":"valladolid","el burgo de osma":"soria","burgo de osma":"soria",
+ "talavera":"toledo","siguenza":"guadalajara","puertollano":"ciudad real",
+ "merida":"badajoz","plasencia":"caceres","guadalupe":"caceres","cabezuela del valle":"caceres",
+ "elche":"alicante","orihuela":"alicante","gandia":"valencia","castellon de la plana":"castellon","segorbe":"castellon",
+ "cartagena":"murcia","caravaca":"murcia",
+ "jerez":"cadiz","el puerto de santa maria":"cadiz","puerto de santa maria":"cadiz","algeciras":"cadiz","ecija":"sevilla","dos hermanas":"sevilla","san juan de aznalfarache":"sevilla","marbella":"malaga","antequera":"malaga","guadix":"granada","ubeda":"jaen",
+ "palma":"mallorca","son bono":"mallorca","la laguna":"tenerife"
+};
+function placeFromText(t){
+  const n=" "+norm(t)+" ";
+  for(const k of Object.keys(CITY).sort((a,b)=>b.length-a.length)) if(n.includes(" "+k+" ")) return PROV[CITY[k]];
+  for(const k of Object.keys(PROV).sort((a,b)=>b.length-a.length)) if(n.includes(" "+k+" ")) return PROV[k];
+  return null;
+}
+function geo(ev){
+  let p = ev.province && PROV[norm(ev.province)];
+  if(!p) p = placeFromText([ev.city,ev.place,ev.province].join(" "));
+  ev.province = p ? p[0] : (ev.province||"");
+  ev.region = p ? p[1] : "Sin determinar";
+  return ev;
+}
+
+/* ==========================================================
+   CLASIFICACIÓN
+   ========================================================== */
+const TYPES = {
+  ejercicios:"Ejercicios espirituales", evd:"Ejercicios en la vida diaria", emaus:"Emaús", effeta:"Effetá",
+  bartimeo:"Bartimeo", adviento:"Adviento / Navidad", silencio:"Retiro de silencio", matrimonios:"Matrimonios y familias", retiro:"Retiro"
+};
+const AUD = { todos:"Todos", adultos:"Adultos", jovenes:"Jóvenes", hombres:"Hombres", mujeres:"Mujeres", matrimonios:"Matrimonios", clero:"Sacerdotes y consagrados" };
+function classify(ev, extra="", audExtra=""){
+  const t = norm(ev.title+" "+extra);
+  const ta = norm(ev.title+" "+audExtra);
+  if(!ev.type){
+    if(/vida diaria|vida ordinaria|\bevd\b/.test(t)) ev.type="evd";
+    else if(/effeta|efeta/.test(t)) ev.type="effeta";
+    else if(/bartimeo/.test(t)) ev.type="bartimeo";
+    else if(/emaus/.test(t)) ev.type="emaus";
+    else if(/adviento|navidad/.test(t)) ev.type="adviento";
+    else if(/matrimonio|familia|novios|parejas/.test(t)) ev.type="matrimonios";
+    else if(/silencio|contemplativ/.test(t)) ev.type="silencio";
+    else if(/ejercicio|tanda|ignacian/.test(t)) ev.type="ejercicios";
+    else ev.type="retiro";
+  }
+  if(!ev.audience){
+    if(/jesuitas|sacerdote|consagrad|clero|presbiter/.test(ta) && !/laic|todos/.test(ta)) ev.audience="clero";
+    else if(/jovenes|joven|universitari|effeta|bartimeo|xuvenil/.test(ta)) ev.audience="jovenes";
+    else if(/matrimonio|parejas|novios/.test(ta)) ev.audience="matrimonios";
+    else if(/mujeres|para mujer/.test(ta)) ev.audience="mujeres";
+    else if(/hombres|varones/.test(ta)) ev.audience="hombres";
+    else ev.audience = ev.type==="emaus" ? "adultos" : "todos";
+  }
+  return ev;
+}
+
+/* ==========================================================
+   UTILIDADES DE FECHA
+   ========================================================== */
+const pad = n => String(n).padStart(2,"0");
+const ymd = d => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const parseYmd = s => { const [y,m,d]=s.slice(0,10).split("-").map(Number); return new Date(y,m-1,d); };
+const addDays = (d,n) => { const x=new Date(d); x.setDate(x.getDate()+n); return x; };
+const addMonths = (d,n) => { const x=new Date(d); const day=x.getDate(); x.setDate(1); x.setMonth(x.getMonth()+n); x.setDate(Math.min(day,new Date(x.getFullYear(),x.getMonth()+1,0).getDate())); return x; };
+const MES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const MES3 = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+function windowRange(){
+  const t=new Date(); const from=new Date(t.getFullYear(),t.getMonth(),t.getDate());
+  return { from, to: addMonths(from, WINDOW_MONTHS) };
+}
+function fmtRange(ev){
+  const a=parseYmd(ev.start), b=parseYmd(ev.end);
+  if(ev.start===ev.end) return a.getDate()+" "+MES[a.getMonth()]+" "+a.getFullYear();
+  if(a.getMonth()===b.getMonth()&&a.getFullYear()===b.getFullYear()) return a.getDate()+"–"+b.getDate()+" "+MES[a.getMonth()]+" "+a.getFullYear();
+  return a.getDate()+" "+MES3[a.getMonth()]+" – "+b.getDate()+" "+MES3[b.getMonth()]+" "+b.getFullYear();
+}
+function durationDays(ev){ return Math.round((parseYmd(ev.end)-parseYmd(ev.start))/864e5)+1; }
+
+/* ==========================================================
+   RED
+   ========================================================== */
+async function fetchWithTimeout(url, opts={}){
+  const ctl=new AbortController(); const id=setTimeout(()=>ctl.abort(),FETCH_TIMEOUT_MS);
+  try{ const r=await fetch(url,{...opts,signal:ctl.signal,cache:"no-store"}); if(!r.ok) throw new Error("HTTP "+r.status); return await r.text(); }
+  finally{ clearTimeout(id); }
+}
+async function fetchText(url,{proxyOnly=false}={}){
+  const errors=[];
+  if(!proxyOnly){ try{ return {text:await fetchWithTimeout(url),via:"directo"}; }catch(e){ errors.push("directo: "+e.message); } }
+  for(const p of PROXIES){
+    try{ const text=await fetchWithTimeout(p(url)); if(text && text.length>20) return {text,via:new URL(p(url)).hostname}; }
+    catch(e){ errors.push(e.message); }
+  }
+  throw new Error(errors.slice(0,2).join(" · ")||"sin respuesta");
+}
+const stripHtml = h => { if(!h) return ""; const d=new DOMParser().parseFromString(h,"text/html"); return (d.body.textContent||"").replace(/\s+/g," ").trim(); };
+const decodeEntities = s => stripHtml(s);
+
+/* ---------- The Events Calendar (WordPress) ---------- */
+async function loadTribe(src, range){
+  const out=[]; let page=1, pages=1, via="";
+  const from=ymd(addDays(range.from,-60)), to=ymd(range.to);
+  do{
+    const url=`${src.base.replace(/\/$/,"")}/wp-json/tribe/events/v1/events?start_date=${from}&end_date=${to}&per_page=50&page=${page}&status=publish`;
+    const r=await fetchText(url); via=r.via;
+    const j=JSON.parse(r.text); pages=Math.min(j.total_pages||1,8);
+    for(const e of (j.events||[])){
+      const v=e.venue && !Array.isArray(e.venue) ? e.venue : {};
+      const cats=(e.categories||[]).map(c=>c.name).join(", ");
+      const desc=stripHtml(e.description);
+      const priceM = (e.cost && /\d/.test(e.cost)) ? e.cost : ((e.cost_details&&/\d/.test(e.cost_details.currency_symbol||""))? e.cost_details.currency_symbol : (desc.match(/(\d{2,4})\s?€/)||[])[0]);
+      const ev = {
+        title: decodeEntities(e.title), start:(e.start_date||"").slice(0,10), end:(e.end_date||e.start_date||"").slice(0,10),
+        place: decodeEntities(v.venue||""), city: v.city||"", province: v.province||v.stateprovince||"",
+        organizer: (e.organizer||[]).map(o=>decodeEntities(o.organizer)).join(", "),
+        url: e.url, desc: desc.slice(0,320), price: priceM||"", src: src.id
+      };
+      if(v.country && !/spain|espa/i.test(v.country)) continue;
+      out.push(classify(ev, cats+" "+desc.slice(0,200), cats));
+    }
+    page++;
+  }while(page<=pages);
+  return {events:out, via};
+}
+
+/* ---------- iCalendar ---------- */
+function parseICS(text){
+  const lines=text.replace(/\r\n/g,"\n").replace(/\n[ \t]/g,"").split("\n");
+  const evs=[]; let cur=null;
+  const unesc=s=>s.replace(/\\n/gi,"\n").replace(/\\,/g,",").replace(/\\;/g,";").replace(/\\\\/g,"\\");
+  for(const raw of lines){
+    if(raw==="BEGIN:VEVENT"){cur={};continue;}
+    if(raw==="END:VEVENT"){ if(cur) evs.push(cur); cur=null; continue; }
+    if(!cur) continue;
+    const i=raw.indexOf(":"); if(i<0) continue;
+    const left=raw.slice(0,i), val=raw.slice(i+1);
+    const [name,...params]=left.split(";");
+    cur[name.toUpperCase()]={val:unesc(val),params:params.join(";")};
+  }
+  const toDate=(p)=>{ if(!p) return null; const m=p.val.match(/^(\d{4})(\d{2})(\d{2})(T(\d{2})(\d{2}))?/); if(!m) return null;
+    return {d:new Date(+m[1],+m[2]-1,+m[3]), allDay:!m[4] || /VALUE=DATE(?!-)/.test(p.params)}; };
+  return evs.map(e=>{
+    const s=toDate(e.DTSTART); if(!s) return null;
+    let en=toDate(e.DTEND)||s;
+    let endD=en.d; if(en.allDay && e.DTEND && endD>s.d) endD=addDays(endD,-1);
+    return { summary:(e.SUMMARY||{}).val||"", description:(e.DESCRIPTION||{}).val||"", location:(e.LOCATION||{}).val||"",
+      url:(e.URL||{}).val||"", categories:(e.CATEGORIES||{}).val||"", start:ymd(s.d), end:ymd(endD), who:(e["X-TEAMUP-WHO"]||{}).val||"" };
+  }).filter(Boolean);
+}
+async function loadICS(src){
+  const r=await fetchText(src.url);
+  if(!/BEGIN:VCALENDAR/.test(r.text)) throw new Error("respuesta no es iCal");
+  const events=parseICS(r.text).map(e=>{
+    // Formatos habituales: "Casa X, Ciudad (Provincia)" · "Casa X (Ciudad)" · "Ciudad (Provincia)" · "Casa X, Ciudad"
+    const loc=(e.location || (e.description.match(/Lugar:\s*([^\n]+)/i)||[])[1] || "").trim();
+    const paren=(loc.match(/\(([^)]+)\)\s*$/)||[])[1]||"";
+    const noParen=loc.replace(/\s*\([^)]*\)\s*$/,"").trim();
+    const parts=noParen.split(/\s*[,–]\s*/).filter(Boolean);
+    const place=parts[0]||loc;
+    const city=(parts.length>1?parts[parts.length-1]:(paren||parts[0]||"")).trim();
+    const province=paren;
+    const price=(e.description.match(/Precio[^:]*:\s*([^\n]+)/i)||[])[1]||"";
+    const ev={ title:e.summary.replace(/\s+/g," ").trim(), start:e.start, end:e.end, place:place||loc, city, province,
+      organizer:e.who||src.organizerFallback||"", url:e.url||src.home, desc:e.description.replace(/Who:[^\n]*\n*/,"").replace(/\n+/g," · ").replace(/^[\s·-]+/,"").slice(0,320),
+      price:price.replace(/\.$/,""), src:src.id };
+    return classify(ev, e.categories+" "+e.description, e.categories);
+  });
+  return {events, via:r.via};
+}
+
+/* ---------- Extracción de fechas en texto libre (noticias) ---------- */
+const MESRX="enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre";
+function datesFromText(txt, refYear){
+  const t=norm(txt).replace(/setiembre/g,"septiembre");
+  const mi=m=>MES.indexOf(m);
+  let m=t.match(new RegExp(`(?:del? )?(\\d{1,2}) (?:de (${MESRX}) )?(?:al|a|y) (\\d{1,2}) de (${MESRX})(?: de (20\\d\\d))?`));
+  if(m){ const y=+(m[5]||refYear); const m2=mi(m[4]); const m1=m[2]?mi(m[2]):m2; let y1=y; if(m1>m2) y1=y-1;
+    return {start:ymd(new Date(y1,m1,+m[1])), end:ymd(new Date(y,m2,+m[3]))}; }
+  m=t.match(new RegExp(`(\\d{1,2}) de (${MESRX})(?: de (20\\d\\d))?`));
+  if(m){ const y=+(m[3]||refYear); const d=new Date(y,mi(m[2]),+m[1]); return {start:ymd(d),end:ymd(d)}; }
+  return null;
+}
+const RETREAT_RX=/\bretiros?\b|ejercicios espirituales|emaus|effeta|bartimeo|tanda de ejercicios|jornada de silencio/;
+const CATHOLIC_RX=/catolic|parroquia|diocesis|diocesano|arzobispado|obispado|iglesia|obispo|espiritual|oracion|emaus|effeta|bartimeo|jesuit|monasterio|convento|seminario|religios/;
+const NOISE_RX=/parque del retiro|el retiro madrid|barrio del retiro|distrito de retiro|se retiro|retirada|jubilacion|pension/;
+function mineItem(src, {title, text, link, date}){
+  const full=title+". "+text; const nf=norm(full);
+  if(!RETREAT_RX.test(nf) || !CATHOLIC_RX.test(nf) || NOISE_RX.test(nf)) return null;
+  const ref=date? new Date(date).getFullYear() : new Date().getFullYear();
+  const dr=datesFromText(full, ref); if(!dr) return null;
+  const pub=date? new Date(date):null;
+  if(pub && parseYmd(dr.end) < addDays(pub,-2)) return null; // crónica de algo ya pasado
+  const p=placeFromText(full); if(!p) return null;           // solo si se identifica un lugar de España
+  const ev={ title:title.replace(/\s+-\s+[^-]+$/,"").trim(), start:dr.start, end:dr.end, place:"", city:"", province:p[0], organizer:"",
+    url:link, desc:text.slice(0,300), src:src.id, verify:true };
+  return classify(ev, text);
+}
+async function loadWpPosts(src){
+  const url=`${src.base.replace(/\/$/,"")}/wp-json/wp/v2/posts?per_page=60&search=retiro&_fields=title,excerpt,link,date`;
+  const r=await fetchText(url);
+  const posts=JSON.parse(r.text);
+  const events=posts.map(p=>mineItem(src,{title:stripHtml(p.title&&p.title.rendered),text:stripHtml(p.excerpt&&p.excerpt.rendered),link:p.link,date:p.date})).filter(Boolean);
+  return {events, via:r.via};
+}
+async function loadRSS(src){
+  const r=await fetchText(src.url,{proxyOnly:src.proxyOnly});
+  const x=new DOMParser().parseFromString(r.text,"text/xml");
+  const items=[...x.querySelectorAll("item")].slice(0,100);
+  const events=items.map(it=>{
+    const g=s=>(it.querySelector(s)||{}).textContent||"";
+    return mineItem(src,{title:g("title"),text:stripHtml(g("description")),link:g("link"),date:g("pubDate")});
+  }).filter(Boolean);
+  return {events, via:r.via};
+}
+const LOADERS={tribe:loadTribe, ics:loadICS, wpposts:loadWpPosts, rss:loadRSS};
+
+/* ==========================================================
+   ESTADO, CACHÉ Y FUSIÓN
+   ========================================================== */
+const store={ get(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } },
+              set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} } };
+const state={ events:[], status:{}, view:"list", day:null, lastLive:null };
+
+function userSources(){ return store.get("retiros.userSources",[]); }
+function allSources(){ return [...BUILTIN_SOURCES, ...userSources()]; }
+
+function keyOf(ev){ return norm(ev.title).slice(0,40)+"|"+ev.start+"|"+norm(ev.city||ev.province).slice(0,12); }
+function merge(lists){
+  const map=new Map();
+  const rank=ev=> ev.verify?1 : (ev.live?3:2);
+  for(const ev of lists.flat()){
+    if(!ev || !ev.start || !ev.end || !ev.title) continue;
+    if(ev.end<ev.start) ev.end=ev.start;
+    geo(ev);
+    const k=keyOf(ev);
+    // coincidencia exacta por clave, o laxa: mismo inicio y misma URL
+    let hitKey = map.has(k) ? k : null;
+    if(!hitKey && ev.url){ for(const [kk,v] of map){ if(v.start===ev.start && v.url===ev.url){ hitKey=kk; break; } } }
+    if(!hitKey){ map.set(k, ev); continue; }
+    const hit=map.get(hitKey);
+    const [hi,lo] = rank(ev)>rank(hit) ? [ev,hit] : [hit,ev];
+    const merged={...lo};
+    for(const f of Object.keys(hi)) if(hi[f]!=="" && hi[f]!=null) merged[f]=hi[f];
+    // la clasificación y la geografía curadas a mano prevalecen sobre las automáticas
+    const curated = [ev,hit].find(x=>!x.live && !x.verify);
+    if(curated){ ["title","type","audience","province","region","city"].forEach(f=>{ if(curated[f]) merged[f]=curated[f]; }); }
+    map.set(hitKey, merged);
+  }
+  return [...map.values()];
+}
+function inWindow(ev, range){ return parseYmd(ev.end)>=range.from && parseYmd(ev.start)<=range.to; }
+
+async function refresh(){
+  const btn=document.getElementById("refreshBtn"); btn.disabled=true;
+  setStatus("spin","Actualizando fuentes…");
+  const range=windowRange();
+  const srcs=allSources();
+  srcs.forEach(s=>state.status[s.id]={state:"spin",msg:"consultando…"});
+  renderSources();
+  const results=await Promise.all(srcs.map(async s=>{
+    try{
+      const {events,via}=await LOADERS[s.type](s,range);
+      events.forEach(e=>{ e.live=true; if(s.verify) e.verify=true; });
+      const inWin=events.filter(e=>inWindow(geo({...e}),range)).length;
+      state.status[s.id]={state:"ok",msg:`${events.length} ${events.length===1?"evento leído":"eventos leídos"} · ${inWin} en la ventana · vía ${via==="directo"?"conexión directa":"proxy "+via}`};
+      return events;
+    }catch(e){
+      state.status[s.id]={state:"err",msg:"no disponible ahora ("+(e.name==="AbortError"?"tiempo agotado":e.message)+")"};
+      return [];
+    }finally{ renderSources(); }
+  }));
+  const live=results.flat();
+  const okCount=Object.values(state.status).filter(s=>s.state==="ok").length;
+  if(live.length){ store.set("retiros.liveCache",{at:Date.now(),events:live}); state.lastLive=Date.now(); }
+  const cache=store.get("retiros.liveCache",null);
+  const pool=[ SEED.map(e=>classify({...e})), live.length?live:(cache?cache.events:[]) ];
+  state.events=merge(pool).filter(e=>inWindow(e,range)).sort((a,b)=>a.start.localeCompare(b.start)||a.title.localeCompare(b.title));
+  if(okCount===srcs.length) setStatus("ok",`Actualizado ${new Date().toLocaleString("es-ES",{dateStyle:"medium",timeStyle:"short"})} · ${okCount}/${srcs.length} fuentes`);
+  else if(okCount>0) setStatus("warn",`Actualizado parcialmente · ${okCount}/${srcs.length} fuentes respondieron`);
+  else setStatus("err", cache? `Sin conexión con las fuentes · mostrando datos base y la última copia (${new Date(cache.at).toLocaleDateString("es-ES")})` : "Sin conexión con las fuentes · mostrando datos base verificados");
+  btn.disabled=false;
+  fillFilters(); render();
+}
+
+/* ==========================================================
+   RENDER
+   ========================================================== */
+const $=id=>document.getElementById(id);
+const esc=s=>(s??"").toString().replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function setStatus(kind,text){ $("statusDot").className="dot "+kind; $("statusText").textContent=text; }
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove("show"),2600); }
+
+function fillFilters(){
+  const keep=id=>$(id).value;
+  const opts=(id, entries, first)=>{ const v=keep(id); $(id).innerHTML=`<option value="">${first}</option>`+entries.map(([val,lab,n])=>`<option value="${esc(val)}">${esc(lab)}${n!=null?` (${n})`:""}</option>`).join(""); if([...$(id).options].some(o=>o.value===v)) $(id).value=v; };
+  const count=(f)=>{ const m={}; state.events.forEach(e=>{ const k=f(e); m[k]=(m[k]||0)+1; }); return m; };
+  const r=count(e=>e.region); opts("fRegion", Object.keys(r).sort((a,b)=>a==="Sin determinar"?1:b==="Sin determinar"?-1:a.localeCompare(b,"es")).map(k=>[k,k,r[k]]), "Todas");
+  const t=count(e=>e.type); opts("fType", Object.keys(TYPES).filter(k=>t[k]).map(k=>[k,TYPES[k],t[k]]), "Todos");
+  const a=count(e=>e.audience); opts("fAud", Object.keys(AUD).filter(k=>a[k]).map(k=>[k,AUD[k],a[k]]), "Cualquiera");
+  const range=windowRange(); const months=[]; for(let d=new Date(range.from.getFullYear(),range.from.getMonth(),1); d<=range.to; d.setMonth(d.getMonth()+1)) months.push([ymd(d).slice(0,7), MES[d.getMonth()]+" "+d.getFullYear()]);
+  opts("fMonth", months.map(([k,l])=>[k,l[0].toUpperCase()+l.slice(1),null]), "Los 3 meses");
+  $("windowPill").textContent=`Del ${range.from.toLocaleDateString("es-ES",{day:"numeric",month:"long"})} al ${range.to.toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"})}`;
+  // chips rápidos
+  const chips=[["finde","Fin de semana"],["jovenes","Jóvenes"],["emaus","Emaús / Effetá"],["silencio8","8 días o más"],["hoy","En curso"]];
+  const active=store.get("retiros.chip","");
+  $("quickChips").innerHTML=chips.map(([k,l])=>`<button type="button" class="chip" data-chip="${k}" aria-pressed="${active===k}">${l}</button>`).join("");
+}
+
+function filtered(){
+  const q=norm($("q").value), reg=$("fRegion").value, ty=$("fType").value, au=$("fAud").value, mo=$("fMonth").value, chip=store.get("retiros.chip","");
+  const today=ymd(new Date());
+  return state.events.filter(e=>{
+    if(reg && e.region!==reg) return false;
+    if(ty && e.type!==ty) return false;
+    if(au && e.audience!==au) return false;
+    if(mo && !(e.start.slice(0,7)<=mo && e.end.slice(0,7)>=mo)) return false;
+    if(state.day && !(e.start<=state.day && e.end>=state.day)) return false;
+    if(q){ const hay=norm([e.title,e.place,e.city,e.province,e.region,e.organizer,e.desc,TYPES[e.type]].join(" ")); if(!q.split(" ").every(w=>hay.includes(w))) return false; }
+    if(chip==="finde"){ const d=durationDays(e); const wd=parseYmd(e.start).getDay(); if(!(d<=4 && (wd===5||wd===4||wd===6))) return false; }
+    if(chip==="jovenes" && e.audience!=="jovenes") return false;
+    if(chip==="emaus" && !["emaus","effeta","bartimeo"].includes(e.type)) return false;
+    if(chip==="silencio8" && durationDays(e)<8) return false;
+    if(chip==="hoy" && !(e.start<=today && e.end>=today)) return false;
+    return true;
+  });
+}
+
+function card(e){
+  const a=parseYmd(e.start); const d=durationDays(e); const today=ymd(new Date());
+  const ongoing=e.start<=today && e.end>=today;
+  const where=[e.place, e.city && !(e.place||"").includes(e.city)?e.city:"", e.province && e.province!==e.city?e.province:""].filter(Boolean).join(" · ");
+  const srcName=(allSources().find(s=>s.id===e.src)||{}).name;
+  return `<article class="card">
+    <div class="date" aria-hidden="true"><div class="d">${a.getDate()}</div><div class="m">${MES3[a.getMonth()]}</div><div class="span">${d>1?d+" días":"1 día"}</div></div>
+    <div>
+      <h3>${esc(e.title)}</h3>
+      <p class="where">📍 ${esc(where||"Lugar por confirmar")}</p>
+      ${e.organizer?`<p class="who">${esc(e.organizer)}</p>`:""}
+      <p class="who"><strong>${esc(fmtRange(e))}</strong>${e.price?` · ${esc(e.price)}`:""}</p>
+      ${e.desc?`<p class="desc">${esc(e.desc)}</p>`:""}
+      <div class="tags">
+        <span class="tag type">${esc(TYPES[e.type]||"Retiro")}</span>
+        <span class="tag">${esc(AUD[e.audience]||"")}</span>
+        <span class="tag">${esc(e.region)}</span>
+        ${ongoing?`<span class="tag now">En curso</span>`:""}
+        ${e.verify?`<span class="tag check" title="Detectado automáticamente en una noticia">verificar</span>`:e.live?`<span class="tag live" title="${esc(srcName||"")}">en vivo</span>`:`<span class="tag" title="Dato verificado el ${SEED_BUILT}">datos base</span>`}
+      </div>
+      <div class="actions">
+        ${e.url?`<a href="${esc(e.url)}" target="_blank" rel="noopener">Más información ↗</a>`:""}
+        <a href="${esc(gcalLink(e))}" target="_blank" rel="noopener">Google Calendar</a>
+        <button type="button" data-ics="${esc(keyOf(e))}">.ics</button>
+      </div>
+    </div>
+  </article>`;
+}
+
+function render(){
+  const list=filtered();
+  const n=list.length;
+  $("countTitle").textContent = n ? `${n} ${n===1?"retiro":"retiros"} en los próximos ${WINDOW_MONTHS} meses` : "Ningún retiro con estos filtros";
+  const note=$("dayFilterNote");
+  if(state.day){ note.hidden=false; note.innerHTML=`Mostrando solo el ${parseYmd(state.day).toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"})} · <a href="#" id="clearDay">ver todos</a>`; }
+  else note.hidden=true;
+  // lista agrupada por mes de inicio (los que ya empezaron van al mes actual)
+  const range=windowRange(); const cur=ymd(range.from).slice(0,7);
+  const groups=new Map();
+  list.forEach(e=>{ const k=e.start.slice(0,7)<cur?cur:e.start.slice(0,7); if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(e); });
+  $("listView").innerHTML = n ? [...groups].map(([k,evs])=>{ const d=parseYmd(k+"-01");
+      return `<h3 class="month-h">${MES[d.getMonth()]} ${d.getFullYear()}<span>${evs.length}</span></h3><div class="grid">${evs.map(card).join("")}</div>`; }).join("")
+    : `<div class="empty">No hay resultados. Prueba a quitar algún filtro o amplía la búsqueda.</div>`;
+  renderCalendar(list);
+}
+
+function renderCalendar(list){
+  const range=windowRange(); const todayS=ymd(new Date());
+  const typeCls=t=>t==="emaus"||t==="bartimeo"?"t-emaus":t==="effeta"?"t-effeta":t==="adviento"?"t-adviento":t==="evd"?"t-evd":"";
+  let html=`<div class="cal-wrap">`;
+  for(let m=new Date(range.from.getFullYear(),range.from.getMonth(),1); m<=range.to; m=new Date(m.getFullYear(),m.getMonth()+1,1)){
+    const first=(m.getDay()+6)%7; const days=new Date(m.getFullYear(),m.getMonth()+1,0).getDate();
+    html+=`<div class="cal"><h4>${MES[m.getMonth()]} ${m.getFullYear()}</h4><table><thead><tr>${["L","M","X","J","V","S","D"].map(d=>`<th>${d}</th>`).join("")}</tr></thead><tbody><tr>`;
+    for(let i=0;i<first;i++) html+="<td class='out'></td>";
+    for(let d=1; d<=days; d++){
+      const ds=ymd(new Date(m.getFullYear(),m.getMonth(),d));
+      const evs=list.filter(e=>e.start<=ds && e.end>=ds && e.type!=="evd");
+      const cls=[evs.length?"has":"", ds===todayS?"today":"", state.day===ds?"sel":"", (ds<ymd(range.from)||ds>ymd(range.to))?"out":""].join(" ");
+      html+=`<td class="${cls}"><button type="button" data-day="${ds}" aria-label="${d} de ${MES[m.getMonth()]}: ${evs.length} retiros"><span class="n">${d}</span>${evs.length?`<span class="cnt">${evs.length}</span><div class="bars">${evs.slice(0,6).map(e=>`<span class="bar ${typeCls(e.type)}" title="${esc(e.title)}"></span>`).join("")}</div>`:""}</button></td>`;
+      if((first+d)%7===0 && d<days) html+="</tr><tr>";
+    }
+    html+="</tr></tbody></table></div>";
+  }
+  html+=`</div><div class="legend"><span><i style="background:var(--accent)"></i>Ejercicios / retiros</span><span><i style="background:#2f6b8f"></i>Emaús · Bartimeo</span><span><i style="background:#3f8a5a"></i>Effetá</span><span><i style="background:#6a4a9e"></i>Adviento / Navidad</span><span>Los ejercicios en la vida diaria (todo el curso) no se pintan en el calendario.</span></div>`;
+  $("calView").innerHTML=html;
+}
+
+function renderSources(){
+  const us=userSources().map(s=>s.id);
+  $("sourcesList").innerHTML = allSources().map(s=>{ const st=state.status[s.id]||{state:"",msg:"pendiente"};
+    return `<div class="src"><span class="dot ${st.state}"></span><div><a href="${esc(s.home||s.url||s.base)}" target="_blank" rel="noopener">${esc(s.name)}</a><small>${esc(st.msg)}</small></div>${us.includes(s.id)?`<button class="btn ghost" type="button" data-rmsrc="${esc(s.id)}">Quitar</button>`:""}</div>`; }).join("")
+    + `<div class="src"><span class="dot ok"></span><div>Datos base verificados a mano<small>${SEED.length} entradas revisadas el ${new Date(SEED_BUILT).toLocaleDateString("es-ES")}; se filtran automáticamente por la ventana de fechas</small></div></div>`;
+}
+
+/* ==========================================================
+   EXPORTACIÓN
+   ========================================================== */
+function gcalLink(e){
+  const s=e.start.replace(/-/g,""), en=ymd(addDays(parseYmd(e.end),1)).replace(/-/g,"");
+  const loc=[e.place,e.city,e.province].filter(Boolean).join(", ");
+  return "https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(e.title)+"&dates="+s+"/"+en+"&location="+encodeURIComponent(loc)+"&details="+encodeURIComponent((e.desc||"")+(e.url?"\n\n"+e.url:""));
+}
+function icsEsc(s){ return (s||"").replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\n/g,"\\n"); }
+function fold(line){ // RFC 5545: líneas ≤75 octetos (margen para caracteres multibyte)
+  const out=[]; let cur="";
+  for(const ch of line){ const next=cur+ch; if(new TextEncoder().encode(next).length>74){ out.push(cur); cur=" "+ch; } else cur=next; }
+  out.push(cur); return out.join("\r\n"); }
+function buildICS(evs){
+  const stamp=new Date().toISOString().replace(/[-:]/g,"").replace(/\.\d+/,"");
+  const body=evs.map((e,i)=>[ "BEGIN:VEVENT", "UID:"+ (e.start+"-"+i+"-"+norm(e.title).replace(/ /g,"-").slice(0,30)) +"@retiros-es",
+    "DTSTAMP:"+stamp, "DTSTART;VALUE=DATE:"+e.start.replace(/-/g,""), "DTEND;VALUE=DATE:"+ymd(addDays(parseYmd(e.end),1)).replace(/-/g,""),
+    "SUMMARY:"+icsEsc(e.title), "LOCATION:"+icsEsc([e.place,e.city,e.province].filter(Boolean).join(", ")),
+    "DESCRIPTION:"+icsEsc([e.organizer,e.price,e.desc,e.url].filter(Boolean).join("\n")), e.url?"URL:"+e.url:null, "END:VEVENT"].filter(Boolean).map(fold).join("\r\n"));
+  return ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Retiros catolicos Espana//ES","CALSCALE:GREGORIAN","X-WR-CALNAME:Retiros católicos","X-WR-TIMEZONE:Europe/Madrid",...body,"END:VCALENDAR"].join("\r\n");
+}
+function download(name,text){ const b=new Blob([text],{type:"text/calendar;charset=utf-8"}); const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500); }
+
+/* ==========================================================
+   EVENTOS DE INTERFAZ
+   ========================================================== */
+function setView(v){ state.view=v; store.set("retiros.view",v);
+  document.querySelectorAll(".seg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.view===v));
+  $("listView").hidden = false; $("calView").hidden = v!=="cal";
+  if(v==="cal") $("calView").after($("listView")); else $("calView").before($("listView"));
+}
+["q","fRegion","fType","fAud","fMonth"].forEach(id=>$(id).addEventListener(id==="q"?"input":"change",()=>render()));
+document.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
+$("refreshBtn").addEventListener("click",refresh);
+$("exportBtn").addEventListener("click",()=>{ const l=filtered(); if(!l.length) return toast("No hay retiros que exportar"); download("retiros-catolicos.ics",buildICS(l)); toast(`${l.length} retiros exportados`); });
+$("themeBtn").addEventListener("click",()=>{ const r=document.documentElement; const dark = r.dataset.theme ? r.dataset.theme==="dark" : matchMedia("(prefers-color-scheme: dark)").matches; r.dataset.theme = dark?"light":"dark"; store.set("retiros.theme",r.dataset.theme); });
+document.addEventListener("click",ev=>{
+  const t=ev.target.closest("[data-ics],[data-day],[data-chip],[data-rmsrc],#clearDay"); if(!t) return;
+  if(t.id==="clearDay"){ ev.preventDefault(); state.day=null; render(); return; }
+  if(t.dataset.ics){ const e=state.events.find(x=>keyOf(x)===t.dataset.ics); if(e) download(norm(e.title).replace(/ /g,"-").slice(0,40)+".ics",buildICS([e])); return; }
+  if(t.dataset.day){ state.day = state.day===t.dataset.day?null:t.dataset.day; render(); if(state.day) $("listView").scrollIntoView({behavior:"smooth",block:"start"}); return; }
+  if(t.dataset.chip){ const cur=store.get("retiros.chip",""); store.set("retiros.chip", cur===t.dataset.chip?"":t.dataset.chip); document.querySelectorAll("[data-chip]").forEach(c=>c.setAttribute("aria-pressed",c.dataset.chip===store.get("retiros.chip",""))); render(); return; }
+  if(t.dataset.rmsrc){ store.set("retiros.userSources",userSources().filter(s=>s.id!==t.dataset.rmsrc)); delete state.status[t.dataset.rmsrc]; renderSources(); refresh(); }
+});
+$("addSrcForm").addEventListener("submit",ev=>{
+  ev.preventDefault();
+  let url=$("newSrcUrl").value.trim(); const type=$("newSrcType").value;
+  try{ const u=new URL(url); if(type==="tribe") url=u.origin; }catch(e){ return toast("URL no válida"); }
+  const id="u"+Date.now().toString(36);
+  const host=new URL(url).hostname.replace(/^www\./,"");
+  const s= type==="ics" ? {id,name:"Fuente añadida · "+host,type,url,home:url} : {id,name:"Fuente añadida · "+host,type,base:url,home:url};
+  store.set("retiros.userSources",[...userSources(),s]); $("newSrcUrl").value="";
+  toast("Fuente añadida; actualizando…"); refresh();
+});
+
+/* ==========================================================
+   ARRANQUE
+   ========================================================== */
+(function init(){
+  const th=store.get("retiros.theme",null); if(th) document.documentElement.dataset.theme=th;
+  // Primer pintado inmediato con datos base (+ última copia en vivo si existe)
+  const range=windowRange(); const cache=store.get("retiros.liveCache",null);
+  state.events=merge([SEED.map(e=>classify({...e})), cache?cache.events:[]]).filter(e=>inWindow(e,range)).sort((a,b)=>a.start.localeCompare(b.start));
+  fillFilters(); setView(store.get("retiros.view","list")); render(); renderSources();
+  $("buildInfo").textContent=`Base verificada: ${new Date(SEED_BUILT).toLocaleDateString("es-ES")}. Ventana móvil de ${WINDOW_MONTHS} meses desde hoy. Se vuelve a consultar cada 6 h si la página sigue abierta.`;
+  refresh();
+  setInterval(refresh, REFRESH_EVERY_MS);
+})();
+</script>
+</body>
+</html>
