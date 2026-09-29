@@ -1,0 +1,851 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grupos carismáticos · Madrid</title>
+<meta name="description" content="Mapa interactivo de los grupos de oración de la Renovación Carismática Católica en la Comunidad de Madrid, con datos de Charis España actualizados al abrir.">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f3ee; --panel:#ffffff; --ink:#1d1b18; --muted:#6c675f; --line:#e5e1d8;
+  --chip:#efece5; --chip-on:#1d1b18; --chip-on-ink:#ffffff;
+  --accent:#9b2335; --accent-soft:#f6e6e8;
+  --c-rcce:#2563eb; --c-rccee:#c2410c; --c-com:#7c3aed;
+  --ok:#15803d; --warn:#b45309; --off:#8a857c;
+  --shadow:0 1px 2px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.06);
+  --radius:12px;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#131211; --panel:#1c1b19; --ink:#eeebe4; --muted:#a39e94; --line:#2f2d29;
+    --chip:#262421; --chip-on:#eeebe4; --chip-on-ink:#131211;
+    --accent:#e57c8b; --accent-soft:#3a2226;
+    --c-rcce:#60a5fa; --c-rccee:#fb923c; --c-com:#a78bfa;
+    --ok:#4ade80; --warn:#fbbf24; --off:#8a857c;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#131211; --panel:#1c1b19; --ink:#eeebe4; --muted:#a39e94; --line:#2f2d29;
+  --chip:#262421; --chip-on:#eeebe4; --chip-on-ink:#131211;
+  --accent:#e57c8b; --accent-soft:#3a2226;
+  --c-rcce:#60a5fa; --c-rccee:#fb923c; --c-com:#a78bfa;
+  --ok:#4ade80; --warn:#fbbf24; --off:#8a857c;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+button,input,select{font:inherit;color:inherit}
+
+/* Cabecera */
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:14px 20px;border-bottom:1px solid var(--line);background:var(--panel)}
+.brand h1{font:700 22px/1.15 var(--serif);margin:0;letter-spacing:-.01em}
+.brand .sub{margin:3px 0 0;color:var(--muted);font-size:13.5px}
+.brand .sub a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+.status{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);min-width:0;flex:1 1 320px;justify-content:flex-end;flex-wrap:wrap}
+#statusText{min-width:0;text-align:right}
+.status .dot{width:9px;height:9px;border-radius:50%;background:var(--off);flex:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--off) 20%,transparent)}
+.status[data-state="live"] .dot{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 22%,transparent)}
+.status[data-state="stored"] .dot,.status[data-state="snapshot"] .dot{background:var(--warn);box-shadow:0 0 0 3px color-mix(in srgb,var(--warn) 22%,transparent)}
+.status[data-state="loading"] .dot{animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.35}}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 12px;cursor:pointer;font-size:13px;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn:disabled{opacity:.5;cursor:default}
+.btn svg{width:14px;height:14px}
+
+/* Estructura */
+.layout{display:grid;grid-template-columns:minmax(340px,410px) 1fr;height:calc(100vh - 71px);height:calc(100dvh - 71px)}
+.panel{display:flex;flex-direction:column;min-height:0;border-right:1px solid var(--line);background:var(--panel)}
+#map{min-height:0;background:var(--bg)}
+
+.controls{padding:14px 16px 10px;display:grid;gap:10px;border-bottom:1px solid var(--line)}
+.search{position:relative}
+.search svg{position:absolute;left:11px;top:50%;width:16px;height:16px;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.search input{width:100%;padding:9px 12px 9px 34px;border:1px solid var(--line);border-radius:10px;background:var(--bg);outline:none}
+.search input:focus{border-color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:0;background:var(--chip);border-radius:999px;padding:5px 11px;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.chip[aria-pressed="true"]{background:var(--chip-on);color:var(--chip-on-ink)}
+.chip .sw{width:9px;height:9px;border-radius:50%;background:var(--c)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row select{flex:1 1 140px;min-width:0;padding:7px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+
+.summary{padding:9px 16px;font-size:12.5px;color:var(--muted);display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--line)}
+.news{margin:10px 16px 0;padding:10px 12px;border-radius:10px;background:var(--accent-soft);font-size:13px}
+.news strong{color:var(--accent)}
+
+.list{list-style:none;margin:0;padding:6px 8px 12px;overflow:auto;flex:1 1 auto;min-height:0}
+.item{display:grid;grid-template-columns:10px 1fr;gap:10px;padding:11px 10px;border-radius:10px;cursor:pointer;outline:none}
+.item:hover{background:var(--bg)}
+.item:focus-visible{box-shadow:0 0 0 2px var(--accent)}
+.item.sel{background:var(--bg);box-shadow:inset 3px 0 0 var(--accent)}
+.item .sw{width:10px;height:10px;border-radius:50%;background:var(--c);margin-top:6px}
+.item h3{margin:0;font-size:15px;font-weight:650;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.item .when{font-size:13px;margin-top:2px}
+.item .next{font-weight:600}
+.item .next.today{color:var(--accent)}
+.item .where{font-size:12.5px;color:var(--muted);margin-top:2px}
+.item .meta{display:flex;gap:6px;align-items:center;margin-top:5px;font-size:11.5px;color:var(--muted)}
+.tag{border:1px solid var(--line);border-radius:999px;padding:1px 7px}
+.badge{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border-radius:4px;padding:1px 5px;background:var(--accent);color:#fff}
+.badge.chg{background:var(--warn)}
+.empty{padding:30px 16px;text-align:center;color:var(--muted)}
+
+.contacts{border-top:1px solid var(--line);padding:10px 16px;font-size:13px}
+.contacts summary{cursor:pointer;font-weight:600}
+.contacts dl{margin:8px 0 0;display:grid;grid-template-columns:auto 1fr;gap:4px 10px}
+.contacts dt{color:var(--muted)}
+.contacts dd{margin:0;word-break:break-word}
+.foot{margin:0;padding:8px 16px 14px;font-size:11.5px;color:var(--muted)}
+
+/* Popups del mapa */
+.leaflet-popup-content-wrapper{border-radius:12px;background:var(--panel);color:var(--ink);box-shadow:var(--shadow)}
+.leaflet-popup-tip{background:var(--panel)}
+.leaflet-container{font:inherit;background:var(--bg)}
+.leaflet-container a.leaflet-popup-close-button{color:var(--muted)}
+.pop{min-width:220px;max-width:280px}
+.pop h3{font:700 17px/1.2 var(--serif);margin:0 0 6px}
+.pop p{margin:0 0 7px;font-size:13px}
+.pop .pnext{font-weight:600}
+.pop .pnext.today{color:var(--accent)}
+.pop .muted{color:var(--muted)}
+.pop .go{display:inline-block;margin-top:2px;background:var(--accent);color:#fff;text-decoration:none;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600}
+.pop .approx{display:block;margin-top:8px;font-size:11.5px;color:var(--muted)}
+.leaflet-control-attribution{font-size:10.5px}
+#map.dark-tiles .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.95) contrast(.9) saturate(.6)}
+.leaflet-control-layers{border-radius:10px;background:var(--panel);color:var(--ink)}
+.leaflet-control-layers-expanded{padding:8px 12px;font-size:13px}
+.you{width:14px;height:14px;border-radius:50%;background:#0ea5e9;border:3px solid #fff;box-shadow:0 0 0 2px rgba(14,165,233,.4)}
+
+@media (max-width: 860px){
+  .layout{display:flex;flex-direction:column;height:auto}
+  #map{order:-1;height:46vh;min-height:300px;flex:none}
+  .panel{border-right:0;border-top:1px solid var(--line)}
+  .list{overflow:visible}
+  .top{padding:12px 16px}
+  .brand h1{font-size:19px}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <h1>Grupos de oración carismáticos</h1>
+    <p class="sub">Comunidad de Madrid · datos de <a href="https://charisespana.com/grupos-de-oracion-madrid/" target="_blank" rel="noopener">Charis España</a></p>
+  </div>
+  <div class="status" id="status" data-state="loading" aria-live="polite">
+    <span class="dot" aria-hidden="true"></span>
+    <span id="statusText">Consultando la web de Charis…</span>
+    <button class="btn" id="refresh" type="button" title="Volver a consultar la web de Charis">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>Actualizar
+    </button>
+  </div>
+</header>
+
+<main class="layout">
+  <aside class="panel" aria-label="Listado de grupos">
+    <div class="controls">
+      <label class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" type="search" placeholder="Buscar grupo, parroquia, calle, barrio…" autocomplete="off" aria-label="Buscar">
+      </label>
+      <div class="chips" id="dayChips" role="group" aria-label="Día de reunión"></div>
+      <div class="row">
+        <select id="city" aria-label="Municipio"></select>
+        <select id="sort" aria-label="Ordenar">
+          <option value="next">Próxima reunión</option>
+          <option value="name">Nombre</option>
+          <option value="dist" disabled>Distancia</option>
+        </select>
+        <button class="btn" id="near" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>Cerca de mí
+        </button>
+      </div>
+      <div class="chips" id="realChips" role="group" aria-label="Realidad carismática"></div>
+    </div>
+    <div class="summary" aria-live="polite"><span id="count"></span><span id="geoStatus"></span></div>
+    <div class="news" id="news" hidden></div>
+    <ol class="list" id="list"></ol>
+    <details class="contacts">
+      <summary>Contactos de cada realidad</summary>
+      <dl id="contacts"></dl>
+    </details>
+    <p class="foot">Fuente: <a href="https://charisespana.com/grupos-de-oracion-madrid/" target="_blank" rel="noopener">Servicio Nacional de Comunión CHARIS</a>. Si detecta un error o falta algún grupo, Charis pide comunicarlo a los líderes de su realidad. Mapa y ubicaciones © colaboradores de OpenStreetMap (teselas de openstreetmap.org / openstreetmap.fr, geocodificación con Nominatim).</p>
+  </aside>
+  <div id="map" role="region" aria-label="Mapa de los grupos"></div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+(function(){
+'use strict';
+
+/* ───────────────────────── Configuración ───────────────────────── */
+const PAGE_URL = 'https://charisespana.com/grupos-de-oracion-madrid/';
+const WP = 'https://public-api.wordpress.com/rest/v1.1/sites/';
+const WP_FIELDS = 'fields=content,modified,URL';
+const SOURCES = [
+  {label:'web de Charis', kind:'jsonp', url:()=>WP+'175046798/posts/2932?'+WP_FIELDS},
+  {label:'web de Charis', kind:'jsonp', url:()=>WP+'charisespana.com/posts/slug:grupos-de-oracion-madrid?'+WP_FIELDS},
+  {label:'web de Charis', kind:'json',  url:()=>WP+'175046798/posts/2932?'+WP_FIELDS+'&_='+Date.now()},
+  {label:'web de Charis (vía proxy)', kind:'html', url:()=>'https://api.allorigins.win/raw?url='+encodeURIComponent(PAGE_URL+'?_='+Date.now())},
+  {label:'web de Charis (vía proxy)', kind:'html', url:()=>'https://corsproxy.io/?url='+encodeURIComponent(PAGE_URL)},
+  {label:'web de Charis (vía proxy)', kind:'html', url:()=>'https://api.codetabs.com/v1/proxy/?quest='+encodeURIComponent(PAGE_URL)}
+];
+
+/* Copia de seguridad incluida en el archivo (página de Charis modificada el 27/01/2025, copiada el 29/09/2026).
+   Las coordenadas son aproximadas; al abrir se afinan con el geocodificador y se guardan en el navegador. */
+const SNAPSHOT = {
+  captured:'2026-09-29',
+  modified:'2025-01-27T10:03:45+00:00',
+  groups:[
+["Abba","Aranjuez","Parroquia Espíritu Santo, Valeras, 2, Aranjuez, 28300","Martes, 20:00","RCCE",40.0330,-3.6010],
+["Adoremos","Madrid","Parroquia de La Encarnación del Señor, Av. de la Institución Libre de Enseñanza, 49, 28037","Domingos a las 17:30","RCCeE",40.4430,-3.6230],
+["Amor de Dios","Madrid","Parroquia de San Dámaso, C/ Mauricio Legendre, 10, Madrid, 28046","Miércoles, 18:30","RCCE",40.4735,-3.6860],
+["Casita de Nazaret","Madrid","Parroquia Inmaculado Corazón de María (Argüelles), C/ Ferraz, 74 (sótano), Madrid, 28008","Sábado, 18:30","RCCE",40.4312,-3.7187],
+["Comunidad Abraham","Madrid","Parroquia Nuestra Señora de los Apostoloes, Calle de Luis de Hoyos Saiz, 94B, Madrid","2do y 4to Domingo, 20:15","Comunidad Abraham",40.4040,-3.6440],
+["Comunidad Israel","San Martín de la Vega","Parroquia Natividad de Nuestra Señora, C. de la Iglesia, 26, 28330 San Martín de la Vega, Madrid","Domingo, 18:00","Comunidad Israel",40.2085,-3.5705],
+["Cristo Vive","Madrid","Convento de Religiosas Concepcionistas Franciscanas, Calle de Blasco de Garay 51-53,","Miércoles, 20:00","Comunidad Cristo Vive",40.4355,-3.7140],
+["Crucifixión Del Señor","Madrid","Parroquia de la Crucifixión del Señor, C/ Cuart de Poblet, 11 duplicado","Jueves a las 18:30 h","RCCeE",40.4050,-3.6420],
+["El encuentro con Enmanuel","Madrid","Parroquia de San Isidoro y San Pedro Claver (Hortaleza), C/ Villa de Pons, 14, Madrid, 28033","Viernes, 20:00","RCCE",40.4700,-3.6500],
+["Elohim","Madrid","Parroquia Santa María Magdalena (Chamartín), C/ Drácena, 23, Madrid, 28047","Domingo, 17:30","RCCE",40.4480,-3.6620],
+["Emaús","Madrid","Parroquia San Juan Bautista de la Concepción, C/ Camarena, 57 (Aluche)","Jueves a las 18:30 h","RCCeE",40.3920,-3.7550],
+["Epifanía","Madrid","Parroquia de la Epifanía del Señor, Calle de Ntra. Sra. de la Luz, 64, 28047","Miércoles a las 20:00 h","RCCeE",40.3940,-3.7380],
+["Fray Escoba","Móstoles","Parroquia San Martín de Porres, C/ Río Duero, 12","Martes a las 19:30 h; verano: 20:30 h","RCCeE",40.3290,-3.8620],
+["Fuente Viva","Madrid","Parroquia Nuestra Señora de las Fuentes (Barrio del Pilar), C/ Villa de Marín, 39, Madrid, 28029","Viernes, 19:00","RCCE",40.4780,-3.7070],
+["Gozo y Esperanza","Alcalá de Henares","Parrq. Santiago Apóstol, C/ Torrelaguna, 2, Alcalá de Henares, 28807","Jueves, 18:00","RCCE",40.4900,-3.3750],
+["Hija de Sión","Madrid","Parroquia San Rafael Arnáiz (Sanchinarro), C/ Octavio Paz, 2, Madrid, 28050","Lunes, 20:45","RCCE",40.4955,-3.6560],
+["Hijo de David","Madrid","Parroquia de San Leopoldo (Alto Extremadura), C/ Sagrados Corazones, 28, Madrid, 28011","Viernes, 19:30","RCCE",40.4150,-3.7430],
+["Horeb","Fuenlabrada","Parrq. San Esteban protomártir, Plaza Francisco Escobar, 10, Fuenlabrada, 28944","Miércoles, 20:30","RCCE",40.2840,-3.7950],
+["Hosanna","Madrid","Cripta de Jesús de Medinaceli, Plaza de Jesús, 1","Jueves de 18:30 a 20:15h","RCCeE",40.4144,-3.6955],
+["Jesús Resucitado","Madrid","Nuestra Señora de los Desamparados y San Lucas, Plaza Pinazo, 8. 28021.","Sábados 18:00","Comunidad Jesús Resucitado",40.3510,-3.7050],
+["La Casa del Señor","Torrejón de Ardoz","Parrq. San Juan Evangelista, C/ Las Fraguas con C/ Libertad, Torrejón de Ardoz, 28850","Jueves, 19:30","RCCE",40.4590,-3.4800],
+["La Milagrosa","Madrid","Parroquia Nuestra Señora del Buen Suceso, C/ Princesa, 43, Madrid, 28008","Sábado, 18:00","RCCE",40.4290,-3.7155],
+["La Rosa De Sarón","Alcobendas","Convento Padres Dominicos, Carretera de Burgos, 204","Sábados a las 17:30 h","RCCeE",40.5280,-3.6480],
+["La alegría de la Visitación","Las Rozas","Parroquia Nuestra Señora de la Visitación, C/ Comunidad de Murcia, 1, Las Rozas, 28230","Viernes, 20:00","RCCE",40.5100,-3.8900],
+["Llama Viva","Alcalá de Henares","Convento de MM. Dominicas, C/ Empecinado, 16, Alcalá de Henares, 28801","Miércoles, 18:30","RCCE",40.4815,-3.3640],
+["Luz","Alcorcón","Parrq. S. Pedro Bautista, C/ Cáceres, 27, Alcorcón, 28922","Jueves, 19:30","RCCE",40.3480,-3.8250],
+["Luz De Vida","Madrid","Parroquia Santa María de la Esperanza, C/ Fermín Caballero, 53 (El Pilar)","Martes a las 19:00 h","RCCeE",40.4800,-3.7120],
+["Madre de los sacerdotes","Humanes de Madrid","Parroquia Sto. Domingo de Guzmán, Plaza de la Constitución, 4, Humanes de Madrid, 28970","Domingo, 19:00","RCCE",40.2530,-3.8280],
+["Maranatha","Madrid","Parroquia de los Sacramentinos, C/ Alcalde Sainz de Baranda, 3 bis","Miércoles a las 19:30 h","RCCeE",40.4178,-3.6770],
+["María Madre","Madrid","Parr. Smo. Cristo de la Guía y S. Juan de Sahagún, Camino Viejo de Vicávaro, 18, Madrid, 28032","Martes, 17:30","RCCE",40.4040,-3.6100],
+["María Madre Nuestra","Madrid","Parroquia Santo Tomás Apóstol, C/ Fernando Gabriel, 18, Madrid, 28017","Martes, 18:00","RCCE",40.4300,-3.6450],
+["María Reina","Villanueva de la Cañada","Parroquia San Carlos Borromeo, Av. Universidad, 2","Jueves a las 20:00 h","RCCeE",40.4480,-3.9940],
+["Myriam","Madrid","Parroquia Ntra. Sra. de la Concepción (Pueblo Nuevo – Ciudad Lineal), C/ Misterios, 4 (Salones), 28027","Miércoles, 19:00","RCCE",40.4350,-3.6440],
+["Nazaret Jerusalén","Madrid","Iglesia Nuestra Señora de Aluche, Parroquia Santo Domingo de Guzmán, C/ Camarena, 138","Martes a las 18:00 h","RCCeE",40.3860,-3.7600],
+["Nuestra Señora de Fátima","Madrid","P. Ntra. Sra. Fátima (salón del colegio, El Carmen – Quintana), C/ Alcalá, 292, 28017","Lunes, 19:00","RCCE",40.4350,-3.6550],
+["Nuestra Señora de Sonsoles","Madrid","Parroquia Nuestra Señora de Sonsoles (Pueblo Nuevo – Ascao), C/ Timoteo Domingo, 38, Madrid, 28017","Martes, 18:00","RCCE",40.4280,-3.6420],
+["Nueva Sión","Madrid","Parroquia San Matías (San Lorenzo – Mar de Cristal), Plaza de la Iglesia, 1, Madrid, 28033","Sábado, 12:00","RCCE",40.4730,-3.6420],
+["Nuevo Pentecostés","Majadahonda","Parroquia Santa María, Avenida de España, 47, Majadahonda, 28220","Jueves, 18:30","RCCE",40.4730,-3.8720],
+["Nuevo Templo","Madrid","Templo de la RCCE (Iglesia Nª Sra. de Lourdes y S. Justino), C/ San Juan de Mata, 30, Madrid, 28011","Jueves, 19:30","RCCE",40.4120,-3.7350],
+["Pan De Los Pobres","Madrid","Parroquia San Antonio de la Florida, Glorieta San Antonio de la Florida, 4","Martes a las 20:00 h; verano (1 junio al 15 Septiembre): 20:30 h","RCCeE",40.4254,-3.7262],
+["Pan de Vida","Madrid","Parroquia Santo Inocentes, C/ Embajadores, 209, Madrid, 28045","Lunes, 19:30","RCCE",40.3920,-3.6940],
+["Renacer","Móstoles","Parrq. de la Consolación, Pintor Miró, 3, Móstoles, 28933","Domingo, 17:00","RCCE",40.3260,-3.8700],
+["Ruah","Madrid","Parroquia Nuestra Señora Reina del Cielo, Pasaje Can Menor, 5","Miércoles a las 19:30 h","RCCeE",40.4030,-3.6510],
+["San José","Las Matas","Parroquia San José Las Matas, C/ Amadeo Vives, 31","Miércoles a las 19:30 h","RCCeE",40.5490,-3.8920],
+["San Juan Crisóstomo","Madrid","Parroquia San Juan Crisóstomo, C/ Doménico Scarlatti nº 2","Lunes a las 20:30 h","RCCeE",40.4370,-3.7180],
+["Santa Florentina","Madrid","Parroquia de Santa Florentina, C/ Longares, 8 (Rosas)","Martes a las 18:00 h","RCCeE",40.4270,-3.6040],
+["Santa María De Caná","Pozuelo de Alarcón","Parroquia Santa María de Caná, Avenida de Europa, 6 (Entrada c/ Grecia, 9)","Lunes a las 20:30 h","RCCeE",40.4400,-3.7980],
+["Santa María Del Buen Humor","Madrid","Parroquia Santa María la Blanca, C. del Monasterio de Oseira, 25, 28049","Viernes a las 19:45 h","RCCeE",40.5070,-3.6970],
+["Santísima Trinidad","Collado Villalba","Parroquia Santísima Trinidad, C/ San Fernando, 2, Collado Villalba, 28400","Miércoles, 19:45","RCCE",40.6340,-4.0070],
+["Shalom","Rivas Vaciamadrid","Parroquia Santa Mónica, Av. Integración s/n, Rivas Vaciamadrid, 28529","Domingo, 19:00","RCCE",40.3500,-3.5200],
+["Shemá Israel","Madrid","Parroquia Ntra. Sra. de la Peña (Vallecas), C/ Puerto Canfranc, 19, Madrid, 28038","Lunes, 19:00","RCCE",40.3940,-3.6630],
+["Siervos de Cristo Vivo","Madrid","Parroquia San Jenaro, C/ Vital Aza, 81, Madrid, 28017","Martes, 18:00","RCCE",40.4300,-3.6480],
+["Teruah","Alcorcón","Inmaculada Concepción de Nuestra Señora, C/ Islas Cíes nº 4, Alcorcón, 28921","Viernes, 20:30","RCCE",40.3500,-3.8350],
+["Virgen del Refugio","Madrid","Parroquia Virgen del Refugio y Santa Lucía, C/ Manresa, 60, Madrid, 28034","Lunes, 17:30","RCCE",40.4850,-3.7010],
+["Wellgate","Villanueva de la Cañada","Ermita Wellgate, Avenida Dehesa 6, Villanueva de la Cañada","Domingo, 19:30","Comunidad Wellgate",40.4460,-3.9800],
+["Zarza Ardiente","Alcalá de Henares","Parroquia Sta. Teresa de Jesús, C/ Arturo Soria, 8, Alcalá de Henares, 288806","Sábado, 18:00","RCCE",40.4950,-3.3700]
+  ],
+  contacts:[
+    ["RCCE","rcc-es.com/gruposdeoracion",[["https://rcc-es.com/gruposdeoracion","rcc-es.com/gruposdeoracion"]]],
+    ["RCCeE","Directorio RCCeE (PDF)",[["https://www.frayescoba.es/Directorio_RCCeE.pdf","Directorio RCCeE (PDF)"]]],
+    ["Comunidad Abraham","comunidadabraham@gmail.com",[["mailto:comunidadabraham@gmail.com","comunidadabraham@gmail.com"]]],
+    ["Comunidad Cristo Vive","605103025 – 722811305",[["tel:605103025","605 103 025"],["tel:722811305","722 811 305"]]],
+    ["Comunidad Israel","676340200 – 605588408",[["tel:676340200","676 340 200"],["tel:605588408","605 588 408"]]],
+    ["Comunidad Jesús Resucitado","659657689",[["tel:659657689","659 657 689"]]],
+    ["Comunidad Wellgate","Instagram",[["https://www.instagram.com/wellgateofficial/","@wellgateofficial"]]]
+  ]
+};
+
+/* Centros aproximados de municipios, para grupos nuevos que aún no tienen coordenadas */
+const TOWNS = {
+  'madrid':[40.4168,-3.7038],'aranjuez':[40.0325,-3.6045],'san martin de la vega':[40.2090,-3.5700],
+  'mostoles':[40.3223,-3.8650],'alcala de henares':[40.4818,-3.3643],'fuenlabrada':[40.2842,-3.7942],
+  'torrejon de ardoz':[40.4588,-3.4800],'alcobendas':[40.5475,-3.6420],'las rozas':[40.4929,-3.8737],
+  'las rozas de madrid':[40.4929,-3.8737],'alcorcon':[40.3458,-3.8249],'humanes de madrid':[40.2508,-3.8280],
+  'villanueva de la canada':[40.4460,-3.9990],'majadahonda':[40.4731,-3.8720],'las matas':[40.5490,-3.8950],
+  'pozuelo de alarcon':[40.4350,-3.8140],'collado villalba':[40.6350,-4.0050],'rivas vaciamadrid':[40.3530,-3.5410],
+  'rivas-vaciamadrid':[40.3530,-3.5410],'getafe':[40.3057,-3.7329],'leganes':[40.3272,-3.7635],'parla':[40.2360,-3.7675],
+  'boadilla del monte':[40.4050,-3.8780],'tres cantos':[40.6010,-3.7080],'san sebastian de los reyes':[40.5474,-3.6261],
+  'coslada':[40.4240,-3.5613],'valdemoro':[40.1908,-3.6736],'arganda del rey':[40.3009,-3.4380],'pinto':[40.2415,-3.6999],
+  'colmenar viejo':[40.6590,-3.7676],'galapagar':[40.5782,-4.0015],'torrelodones':[40.5767,-3.9290],
+  'villaviciosa de odon':[40.3580,-3.9000],'navalcarnero':[40.2890,-4.0130],'san lorenzo de el escorial':[40.5914,-4.1474],
+  'el escorial':[40.5820,-4.1270],'guadarrama':[40.6727,-4.0889],'algete':[40.5970,-3.4970],'mejorada del campo':[40.3950,-3.4880],
+  'san fernando de henares':[40.4240,-3.5350],'ciempozuelos':[40.1590,-3.6200],'villalba':[40.6350,-4.0050]
+};
+
+const FAMILIES = {
+  RCCE:{label:'RCCE', color:'--c-rcce'},
+  RCCeE:{label:'RCCeE', color:'--c-rccee'},
+  COM:{label:'Comunidades', color:'--c-com'}
+};
+const DAYS = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'];
+const DAY_CHIPS = [['all','Todos'],['today','Hoy'],[1,'Lun'],[2,'Mar'],[3,'Mié'],[4,'Jue'],[5,'Vie'],[6,'Sáb'],[0,'Dom']];
+
+/* ───────────────────────── Utilidades ───────────────────────── */
+const $ = s => document.querySelector(s);
+const norm = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const store = {
+  get(k,d){ try{ const v = localStorage.getItem('charisMad:'+k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+  set(k,v){ try{ localStorage.setItem('charisMad:'+k, JSON.stringify(v)); }catch(e){} }
+};
+const fmtDate = (d,opts) => { try{ return new Intl.DateTimeFormat('es-ES',opts||{day:'numeric',month:'short',year:'numeric'}).format(d); }catch(e){ return d.toLocaleDateString(); } };
+const safeHref = h => /^(https?:|mailto:|tel:)/i.test(h||'') ? h : null;
+function km(a,b){
+  const R=6371, r=x=>x*Math.PI/180;
+  const dLat=r(b[0]-a[0]), dLng=r(b[1]-a[1]);
+  const h=Math.sin(dLat/2)**2+Math.cos(r(a[0]))*Math.cos(r(b[0]))*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+function fetchTimeout(url, ms, opts){
+  const ctl = ('AbortController' in window) ? new AbortController() : null;
+  const t = setTimeout(()=>ctl&&ctl.abort(), ms);
+  return fetch(url, Object.assign({signal: ctl?ctl.signal:undefined, cache:'no-store'}, opts||{})).finally(()=>clearTimeout(t));
+}
+function jsonp(url, ms){
+  return new Promise((resolve,reject)=>{
+    const cb = '__charis_'+Date.now()+'_'+Math.floor(Math.random()*1e6);
+    const s = document.createElement('script');
+    const done = () => { clearTimeout(t); try{ delete window[cb]; }catch(e){ window[cb]=undefined; } s.remove(); };
+    const t = setTimeout(()=>{ done(); reject(new Error('timeout')); }, ms||9000);
+    window[cb] = d => { done(); resolve(d); };
+    s.onerror = () => { done(); reject(new Error('jsonp')); };
+    s.src = url + (url.includes('?')?'&':'?') + 'callback=' + cb + '&_=' + Date.now();
+    document.head.appendChild(s);
+  });
+}
+
+/* ───────────────────────── Horarios ───────────────────────── */
+function parseSchedule(text){
+  const t = norm(text);
+  const days = [];
+  DAYS.forEach((d,i)=>{ if(new RegExp('\\b'+d).test(t)) days.push(i); });
+  const tm = t.match(/(\d{1,2})\s*[:.]\s*(\d{2})/) || t.match(/\b(\d{1,2})\s*h\b/);
+  const hour = tm ? +tm[1] : null, min = tm && tm[2] ? +tm[2] : 0;
+  const nth = [];
+  const re = /\b([1-5])\s*(?:º|ª|o|do|to|ro|er|ero|ndo|rto|nd|th)\b/g; let m;
+  while((m = re.exec(t))) nth.push(+m[1]);
+  return {days, hour, min, nth};
+}
+function nextOccurrence(s, now){
+  if(!s.days.length) return null;
+  for(let k=0;k<70;k++){
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate()+k, s.hour??0, s.min??0);
+    if(!s.days.includes(d.getDay())) continue;
+    if(s.nth.length && !s.nth.includes(Math.ceil(d.getDate()/7))) continue;
+    const end = d.getTime() + 105*60000;
+    if(s.hour==null || end > now.getTime()) return {date:d, live: s.hour!=null && d<=now && end>now};
+  }
+  return null;
+}
+function nextLabel(g, now){
+  const o = g.next; if(!o) return {text:'', today:false};
+  const hm = g.sched.hour!=null ? String(g.sched.hour).padStart(2,'0')+':'+String(g.sched.min).padStart(2,'0') : '';
+  const d0 = new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const d1 = new Date(o.date.getFullYear(),o.date.getMonth(),o.date.getDate());
+  const diff = Math.round((d1-d0)/86400000);
+  if(o.live) return {text:'Ahora mismo', today:true};
+  if(diff===0) return {text:'Hoy'+(hm?' · '+hm:''), today:true};
+  if(diff===1) return {text:'Mañana'+(hm?' · '+hm:''), today:false};
+  const lab = fmtDate(o.date,{weekday:'short',day:'numeric',month:'short'});
+  return {text: lab.charAt(0).toUpperCase()+lab.slice(1)+(hm?' · '+hm:''), today:false};
+}
+
+/* ───────────────────────── Datos ───────────────────────── */
+const familyOf = r => { const n = norm(r).replace(/\s/g,''); return n==='rcce' ? 'RCCE' : n==='rccee' ? 'RCCeE' : 'COM'; };
+const idOf = (name,city) => norm(name)+'|'+norm(city);
+const addrKey = (addr,city) => norm(addr)+'|'+norm(city);
+const SEEDS = new Map(SNAPSHOT.groups.map(g=>[addrKey(g[2],g[1]), [g[5],g[6]]]));
+
+function makeGroup(o){
+  const g = {
+    id:idOf(o.name,o.city), name:o.name, city:o.city, address:o.address, schedule:o.schedule,
+    realidad:o.realidad, family:familyOf(o.realidad), sched:parseSchedule(o.schedule)
+  };
+  const seed = SEEDS.get(addrKey(g.address,g.city));
+  const town = TOWNS[norm(g.city)];
+  if(seed){ g.anchor = seed; g.anchorKm = 8; }
+  else if(town){ g.anchor = town; g.anchorKm = norm(g.city)==='madrid' ? 16 : 10; }
+  else { g.anchor = TOWNS.madrid; g.anchorKm = 70; }
+  const cached = store.get('geo:v1:'+addrKey(g.address,g.city), null);
+  if(cached && cached.lat){ g.lat=cached.lat; g.lng=cached.lng; g.prec=cached.prec; }
+  else if(seed){ g.lat=seed[0]; g.lng=seed[1]; g.prec='aprox'; }
+  else if(town){ g.lat=town[0]; g.lng=town[1]; g.prec='municipio'; }
+  else { g.lat=null; g.lng=null; g.prec='none'; }
+  g.geoFailed = !!(cached && cached.none && Date.now()-cached.t < 7*86400000);
+  return g;
+}
+
+function parseCharisHtml(html){
+  const doc = new DOMParser().parseFromString(html,'text/html');
+  const table = doc.querySelector('table');
+  if(!table) throw new Error('sin tabla');
+  const rows = [...table.querySelectorAll('tr')];
+  const cellsOf = tr => [...tr.children].map(c=>c.textContent.replace(/\s+/g,' ').trim());
+  let hIdx = rows.findIndex(tr => cellsOf(tr).some(c=>norm(c)==='nombre'));
+  const head = hIdx>=0 ? cellsOf(rows[hIdx]).map(norm) : ['nombre','ciudad','provincia','direccion','dia y hora de reunion','realidad'];
+  const col = k => head.findIndex(h=>h.includes(k));
+  const ci = {name:col('nombre'), city:col('ciudad'), addr:col('direcc'), when:col('dia'), real:col('realidad')};
+  if(ci.name<0) ci.name=0; if(ci.city<0) ci.city=1; if(ci.addr<0) ci.addr=3; if(ci.when<0) ci.when=4; if(ci.real<0) ci.real=5;
+  const groups = [];
+  rows.forEach((tr,i)=>{
+    if(i<=hIdx) return;
+    const c = cellsOf(tr);
+    if(!c[ci.name] || norm(c[ci.name])==='nombre') return;
+    groups.push({name:c[ci.name], city:c[ci.city]||'Madrid', address:c[ci.addr]||'', schedule:c[ci.when]||'', realidad:c[ci.real]||''});
+  });
+  const contacts = [];
+  doc.querySelectorAll('li').forEach(li=>{
+    const txt = li.textContent.replace(/\s+/g,' ').trim();
+    const m = txt.match(/^((?:RCC\w*|Comunidad[^:]{1,60})):\s*(.+)$/i);
+    if(!m) return;
+    const links = [...li.querySelectorAll('a[href]')].map(a=>[a.getAttribute('href'), a.textContent.trim()||a.getAttribute('href')]).filter(l=>safeHref(l[0]));
+    contacts.push([m[1].trim(), m[2].trim(), links]);
+  });
+  const mod = doc.querySelector('meta[property="article:modified_time"]');
+  return {groups, contacts, modified: mod ? mod.getAttribute('content') : null};
+}
+
+async function loadLive(){
+  let lastErr;
+  for(const src of SOURCES){
+    try{
+      let parsed;
+      if(src.kind==='jsonp' || src.kind==='json'){
+        const d = src.kind==='jsonp' ? await jsonp(src.url(), 9000) : await (await fetchTimeout(src.url(), 9000)).json();
+        if(!d || d.error || !d.content) throw new Error((d&&d.error)||'vacío');
+        parsed = parseCharisHtml(d.content);
+        parsed.modified = d.modified || parsed.modified;
+      } else {
+        const r = await fetchTimeout(src.url(), 12000);
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        parsed = parseCharisHtml(await r.text());
+      }
+      if(parsed.groups.length < 5) throw new Error('tabla incompleta');
+      parsed.via = src.label;
+      return parsed;
+    }catch(e){ lastErr = e; }
+  }
+  throw lastErr || new Error('sin datos');
+}
+
+/* ───────────────────────── Estado ───────────────────────── */
+const state = {
+  groups:[], contacts:[], mode:'loading', modified:null, fetchedAt:null,
+  filter:{q:'', day:'all', fam:new Set(['RCCE','RCCeE','COM']), city:'all'},
+  sort:'next', you:null, selected:null, gen:0, news:{added:new Set(), changed:new Set(), removed:[]}
+};
+
+/* ───────────────────────── Mapa ───────────────────────── */
+const map = L.map('map',{zoomControl:true, attributionControl:true}).setView([40.44,-3.72],10);
+const darkQ = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : {matches:false, addEventListener(){}} ;
+/* Fondos de mapa, todos basados en OpenStreetMap y sin clave */
+const OSM_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">colaboradores de OpenStreetMap</a>';
+const BASES = {
+  'OSM Humanitario': L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {maxZoom:19, subdomains:'abc', attribution:OSM_ATTR+' · HOT'}),
+  'OSM Francia': L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {maxZoom:20, subdomains:'abc', attribution:OSM_ATTR+' · OSM France'}),
+  'OpenStreetMap': L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:OSM_ATTR}),
+};
+let baseName = store.get('base2', 'OSM Humanitario');
+if(!BASES[baseName]) baseName = 'OSM Humanitario';
+BASES[baseName].addTo(map);
+L.control.layers(BASES, null, {position:'topright'}).addTo(map);
+map.on('baselayerchange', e=>store.set('base2', e.name));
+/* Si un fondo falla de forma repetida, se pasa al siguiente automáticamente */
+Object.entries(BASES).forEach(([name, lyr])=>{
+  let errs = 0;
+  lyr.on('tileerror', ()=>{
+    if(++errs < 6 || !map.hasLayer(lyr)) return;
+    const names = Object.keys(BASES), nxt = names[(names.indexOf(name)+1) % names.length];
+    errs = 0; map.removeLayer(lyr); BASES[nxt].addTo(map); store.set('base2', nxt);
+  });
+});
+function setTiles(){
+  const forced = document.documentElement.getAttribute('data-theme');
+  const dark = forced ? forced==='dark' : darkQ.matches;
+  document.getElementById('map').classList.toggle('dark-tiles', dark);
+  restyleMarkers();
+}
+try{ darkQ.addEventListener('change', setTiles); }catch(e){}
+const layer = L.layerGroup().addTo(map);
+const markers = new Map();
+let youMarker = null;
+
+function markerStyle(g, selected){
+  const color = cssVar(FAMILIES[g.family].color) || '#666';
+  const exact = g.prec==='calle' || g.prec==='lugar';
+  return {
+    radius: selected ? 11 : 7.5,
+    color: state.news.added.has(g.id) ? cssVar('--accent') : (exact ? '#ffffff' : color),
+    weight: state.news.added.has(g.id) ? 3 : 2,
+    dashArray: exact ? null : '3 3',
+    fillColor: color, fillOpacity: exact ? .92 : .55, opacity: 1
+  };
+}
+function restyleMarkers(){ markers.forEach((m,id)=>{ const g = state.groups.find(x=>x.id===id); if(g) m.setStyle(markerStyle(g, state.selected===id)); }); }
+
+function contactFor(g){
+  const n = norm(g.realidad);
+  return state.contacts.find(c=>norm(c[0])===n) || state.contacts.find(c=>n && (norm(c[0]).startsWith(n)||n.startsWith(norm(c[0]))));
+}
+function mapsUrl(g){ return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(g.address.replace(/\s*,\s*$/,'')+(norm(g.address).includes(norm(g.city))?'':', '+g.city)); }
+function linksHtml(c){
+  if(!c) return '';
+  const links = (c[2]||[]).filter(l=>safeHref(l[0]));
+  if(!links.length) return esc(c[1]);
+  return links.map(l=>`<a href="${esc(l[0])}" target="_blank" rel="noopener">${esc(l[1])}</a>`).join(' · ');
+}
+function popupHtml(g){
+  const nl = nextLabel(g, new Date());
+  const c = contactFor(g);
+  const exact = g.prec==='calle' || g.prec==='lugar';
+  return `<div class="pop">
+    <h3>${esc(g.name)}</h3>
+    ${nl.text?`<p class="pnext ${nl.today?'today':''}">${esc(nl.text)}</p>`:''}
+    <p>${esc(g.schedule)}</p>
+    <p class="muted">${esc(g.address)}${norm(g.address).includes(norm(g.city))?'':' · '+esc(g.city)}</p>
+    <p><span class="muted">Realidad:</span> ${esc(g.realidad)}${c?`<br><span class="muted">Contacto:</span> ${linksHtml(c)}`:''}</p>
+    <a class="go" href="${esc(mapsUrl(g))}" target="_blank" rel="noopener">Cómo llegar</a>
+    ${exact?'':'<span class="approx">Punto aproximado en el mapa; «Cómo llegar» usa la dirección exacta.</span>'}
+  </div>`;
+}
+function syncMarkers(){
+  const keep = new Set(state.groups.map(g=>g.id));
+  markers.forEach((m,id)=>{ if(!keep.has(id)){ layer.removeLayer(m); markers.delete(id); } });
+  state.groups.forEach(g=>{
+    if(g.lat==null) return;
+    let m = markers.get(g.id);
+    if(!m){
+      m = L.circleMarker([g.lat,g.lng], markerStyle(g,false));
+      m.bindPopup(()=>popupHtml(g), {maxWidth:300, autoPanPadding:[20,20]});
+      m.bindTooltip(g.name, {direction:'top', offset:[0,-8]});
+      m.on('click', ()=>select(g.id,false));
+      markers.set(g.id, m);
+    } else {
+      m.setLatLng([g.lat,g.lng]); m.setStyle(markerStyle(g, state.selected===g.id));
+    }
+  });
+}
+
+/* ───────────────────────── Filtros y listado ───────────────────────── */
+function visibleGroups(){
+  const f = state.filter, q = norm(f.q), now = new Date();
+  const day = f.day==='today' ? now.getDay() : f.day;
+  let out = state.groups.filter(g=>{
+    if(!f.fam.has(g.family)) return false;
+    if(f.city!=='all' && norm(g.city)!==f.city) return false;
+    if(day!=='all' && !g.sched.days.includes(+day)) return false;
+    if(q && !norm([g.name,g.address,g.city,g.realidad,g.schedule].join(' ')).includes(q)) return false;
+    return true;
+  });
+  const byName = (a,b)=>a.name.localeCompare(b.name,'es');
+  if(state.sort==='name') out.sort(byName);
+  else if(state.sort==='dist' && state.you) out.sort((a,b)=>(a.dist??1e9)-(b.dist??1e9));
+  else out.sort((a,b)=>((a.next?a.next.date:9e15)-(b.next?b.next.date:9e15)) || byName(a,b));
+  return out;
+}
+
+let fitNext = true;
+function render(){
+  const now = new Date();
+  state.groups.forEach(g=>{
+    g.next = nextOccurrence(g.sched, now);
+    g.dist = (state.you && g.lat!=null) ? km(state.you,[g.lat,g.lng]) : null;
+  });
+  const vis = visibleGroups();
+  const visIds = new Set(vis.map(g=>g.id));
+  markers.forEach((m,id)=>{ const on = visIds.has(id); if(on && !layer.hasLayer(m)) layer.addLayer(m); if(!on && layer.hasLayer(m)) layer.removeLayer(m); });
+
+  const list = $('#list');
+  if(!vis.length){
+    list.innerHTML = '<li class="empty">Ningún grupo coincide con estos filtros.</li>';
+  } else {
+    list.innerHTML = vis.map(g=>{
+      const nl = nextLabel(g, now);
+      const badge = state.news.added.has(g.id) ? '<span class="badge">Nuevo</span>' : state.news.changed.has(g.id) ? '<span class="badge chg">Cambios</span>' : '';
+      const dist = g.dist!=null ? `<span>${g.dist<10?g.dist.toFixed(1).replace('.',','):Math.round(g.dist)} km</span>` : '';
+      return `<li class="item ${state.selected===g.id?'sel':''}" data-id="${esc(g.id)}" tabindex="0" role="button" style="--c:var(${FAMILIES[g.family].color})">
+        <span class="sw" aria-hidden="true"></span>
+        <div>
+          <h3>${esc(g.name)} ${badge}</h3>
+          <div class="when">${nl.text?`<span class="next ${nl.today?'today':''}">${esc(nl.text)}</span> · `:''}<span>${esc(g.schedule)}</span></div>
+          <div class="where">${esc(g.address.replace(/\s*,\s*$/,''))}${norm(g.address).includes(norm(g.city))?'':' · '+esc(g.city)}</div>
+          <div class="meta"><span class="tag">${esc(g.realidad)}</span>${dist}</div>
+        </div>
+      </li>`;
+    }).join('');
+  }
+  const total = state.groups.length;
+  $('#count').textContent = vis.length===total ? `${total} grupos` : `${vis.length} de ${total} grupos`;
+
+  if(fitNext){
+    const pts = vis.filter(g=>g.lat!=null).map(g=>[g.lat,g.lng]);
+    if(state.you) pts.push(state.you);
+    if(pts.length>1) map.fitBounds(pts,{padding:[30,30], maxZoom:14});
+    else if(pts.length===1) map.setView(pts[0],14);
+    fitNext = false;
+  }
+}
+
+function select(id, fromList){
+  state.selected = id;
+  restyleMarkers();
+  document.querySelectorAll('.item.sel').forEach(el=>el.classList.remove('sel'));
+  const el = document.querySelector(`.item[data-id="${CSS.escape(id)}"]`);
+  if(el){ el.classList.add('sel'); if(!fromList) el.scrollIntoView({block:'nearest', behavior:'smooth'}); }
+  const m = markers.get(id);
+  if(m && fromList){
+    if(!layer.hasLayer(m)) layer.addLayer(m);
+    map.flyTo(m.getLatLng(), Math.max(map.getZoom(),15), {duration:.6});
+    setTimeout(()=>m.openPopup(), 650);
+    if(window.innerWidth<=860) $('#map').scrollIntoView({behavior:'smooth'});
+  }
+}
+
+function buildControls(){
+  $('#dayChips').innerHTML = DAY_CHIPS.map(([v,l])=>`<button class="chip" type="button" data-day="${v}" aria-pressed="${String(state.filter.day)===String(v)}">${l}</button>`).join('');
+  $('#realChips').innerHTML = Object.entries(FAMILIES).map(([k,f])=>{
+    const n = state.groups.filter(g=>g.family===k).length;
+    return n ? `<button class="chip" type="button" data-fam="${k}" aria-pressed="${state.filter.fam.has(k)}" style="--c:var(${f.color})"><span class="sw"></span>${f.label} <span style="opacity:.6">${n}</span></button>` : '';
+  }).join('');
+  const cities = [...new Set(state.groups.map(g=>g.city))].sort((a,b)=>norm(a)==='madrid'?-1:norm(b)==='madrid'?1:a.localeCompare(b,'es'));
+  const cur = state.filter.city;
+  $('#city').innerHTML = '<option value="all">Toda la Comunidad</option>' + cities.map(c=>{
+    const n = state.groups.filter(g=>g.city===c).length;
+    return `<option value="${esc(norm(c))}">${norm(c)==='madrid'?'Madrid capital':esc(c)} (${n})</option>`;
+  }).join('');
+  $('#city').value = [...$('#city').options].some(o=>o.value===cur) ? cur : 'all';
+  state.filter.city = $('#city').value;
+  $('#contacts').innerHTML = state.contacts.map(c=>`<dt>${esc(c[0])}</dt><dd>${linksHtml(c)}</dd>`).join('') || '<dd>Sin datos de contacto.</dd>';
+}
+
+/* ───────────────────────── Novedades ───────────────────────── */
+function computeNews(prev){
+  const cur = new Map(state.groups.map(g=>[g.id,g]));
+  const added = new Set(), changed = new Set(), removed = [];
+  if(prev){
+    const pm = new Map(prev.map(p=>[p.id,p]));
+    cur.forEach((g,id)=>{
+      const p = pm.get(id);
+      if(!p) added.add(id);
+      else if(norm(p.a)!==norm(g.address) || norm(p.s)!==norm(g.schedule)) changed.add(id);
+    });
+    prev.forEach(p=>{ if(!cur.has(p.id)) removed.push(p.n); });
+  }
+  state.news = {added, changed, removed};
+  const box = $('#news');
+  const parts = [];
+  if(added.size) parts.push(`<strong>${added.size} nuevo${added.size>1?'s':''}:</strong> ${esc([...added].map(id=>cur.get(id).name).join(', '))}`);
+  if(changed.size) parts.push(`<strong>${changed.size} con cambios</strong> de horario o dirección: ${esc([...changed].map(id=>cur.get(id).name).join(', '))}`);
+  if(removed.length) parts.push(`<strong>Ya no figura${removed.length>1?'n':''}:</strong> ${esc(removed.join(', '))}`);
+  box.hidden = !parts.length;
+  box.innerHTML = parts.length ? 'Desde tu última consulta · ' + parts.join(' · ') : '';
+}
+const signature = () => state.groups.map(g=>({id:g.id, n:g.name, a:g.address, s:g.schedule}));
+
+/* ───────────────────────── Geocodificación ───────────────────────── */
+const STREET_RE = /^(c\/|c\.\s|calle\s|av\.?\s|avda\.?\s|avenida\s|plaza\s|pl\.\s|pza\.?\s|glorieta\s|camino\s|pasaje\s|paseo\s|carretera\s|ctra\.?\s|ronda\s|traves[ií]a\s)/i;
+function expand(s){
+  return s.replace(/^C\/\s*/i,'Calle ').replace(/^C\.\s+/i,'Calle ').replace(/^Avda\.?\s+/i,'Avenida ').replace(/^Av\.?\s+/i,'Avenida ')
+    .replace(/^Pl\.\s*/i,'Plaza ').replace(/^Pza\.?\s*/i,'Plaza ').replace(/^Ctra\.?\s*/i,'Carretera ')
+    .replace(/\bNtra\.?\s*Sra\.?/gi,'Nuestra Señora').replace(/\bNª\s*Sra\.?/gi,'Nuestra Señora')
+    .replace(/\bSta\.\s*/g,'Santa ').replace(/\bSto\.\s*/g,'Santo ').replace(/\bSmo\.\s*/g,'Santísimo ').replace(/\bS\.\s+/g,'San ')
+    .replace(/\bParrq?\.\s*/gi,'Parroquia ').replace(/^P\.\s+/,'Parroquia ').replace(/\bMM\.\s*/g,'Madres ')
+    .replace(/\s+/g,' ').trim();
+}
+function buildQueries(g){
+  const a = g.address.replace(/\([^)]*\)/g,' ').replace(/\bduplicado\b/gi,' ').replace(/\bn[ºo°]\s*/gi,' ').replace(/\bs\/n\b/gi,' ').replace(/\s+/g,' ');
+  const segs = a.split(',').map(s=>s.trim().replace(/\.$/,'')).filter(Boolean);
+  const cp = (a.match(/\b28\d{3}\b/)||[])[0] || '';
+  const place = norm(g.city)==='las matas' ? 'Las Matas, Las Rozas de Madrid' : g.city;
+  let si = segs.findIndex(s=>STREET_RE.test(s));
+  if(si<0 && segs.length>=2 && !/^\d/.test(segs[1]) && norm(segs[1])!==norm(g.city)) si = 1;
+  const qs = [];
+  if(si>=0){
+    let street = segs[si].split(/\s+con\s+/i)[0];
+    const nx = segs[si+1];
+    if(nx && /^\d+/.test(nx) && !/^28\d{3}$/.test(nx)) street += ' ' + nx.match(/^\d+/)[0];
+    street = expand(street).replace(/(\d+)\s*(?:bis|[a-z])\b/i,'$1').replace(/(\d+)-\d+/,'$1');
+    qs.push({q:`${street}, ${cp?cp+' ':''}${place}, Comunidad de Madrid, España`, prec:'calle'});
+    if(cp) qs.push({q:`${street}, ${place}, España`, prec:'calle'});
+  }
+  if(si!==0 && segs[0]) qs.push({q:`${expand(segs[0])}, ${place}, España`, prec:'lugar'});
+  return qs;
+}
+let lastNom = 0, nomDown = 0;
+async function nominatim(q){
+  const wait = lastNom + 1100 - Date.now(); if(wait>0) await sleep(wait);
+  lastNom = Date.now();
+  const u = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=es&accept-language=es&bounded=1&viewbox=-4.65,41.20,-2.95,39.85&q='+encodeURIComponent(q);
+  const r = await fetchTimeout(u, 9000, {cache:'default'});
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  const j = await r.json();
+  return j && j[0] ? [+j[0].lat, +j[0].lon] : null;
+}
+async function photon(q){
+  const u = 'https://photon.komoot.io/api/?limit=1&lang=es&bbox=-4.65,39.85,-2.95,41.20&q='+encodeURIComponent(q);
+  const r = await fetchTimeout(u, 9000, {cache:'default'});
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  const j = await r.json();
+  const f = j && j.features && j.features[0];
+  return f ? [f.geometry.coordinates[1], f.geometry.coordinates[0]] : null;
+}
+async function geocode(g){
+  let netOk = false;
+  for(const {q,prec} of buildQueries(g)){
+    for(const fn of (nomDown>=3 ? [photon] : [nominatim, photon])){
+      try{
+        const p = await fn(q);
+        netOk = true; if(fn===nominatim) nomDown = 0;
+        if(p && km(p, g.anchor) <= g.anchorKm) return {lat:p[0], lng:p[1], prec};
+        if(p) continue;
+        break; // sin resultado en este servicio: siguiente consulta
+      }catch(e){ if(fn===nominatim) nomDown++; }
+    }
+  }
+  return netOk ? {none:true} : null;
+}
+async function refineLocations(){
+  const gen = state.gen;
+  const todo = state.groups.filter(g=>g.prec!=='calle' && g.prec!=='lugar' && !g.geoFailed);
+  if(!todo.length){ $('#geoStatus').textContent = ''; return; }
+  let done = 0, offline = 0;
+  for(const g of todo){
+    if(gen!==state.gen) return;
+    $('#geoStatus').textContent = `Afinando ubicaciones… ${done}/${todo.length}`;
+    const r = await geocode(g);
+    done++;
+    const key = 'geo:v1:'+addrKey(g.address,g.city);
+    if(r && !r.none){
+      g.lat=r.lat; g.lng=r.lng; g.prec=r.prec;
+      store.set(key, {lat:r.lat, lng:r.lng, prec:r.prec, t:Date.now()});
+      syncMarkers(); render();
+    } else if(r && r.none){
+      g.geoFailed = true; store.set(key, {none:true, t:Date.now()});
+      if(g.lat==null){ /* sin coordenadas de ningún tipo: queda solo en la lista */ }
+    } else if(++offline>=4){
+      $('#geoStatus').textContent = 'Ubicaciones aproximadas (sin conexión al geocodificador)';
+      return;
+    }
+  }
+  if(gen===state.gen) $('#geoStatus').textContent = '';
+}
+
+/* ───────────────────────── Carga ───────────────────────── */
+function applyData(rows, contacts, meta){
+  state.gen++;
+  state.groups = rows.map(makeGroup);
+  state.contacts = contacts && contacts.length ? contacts : SNAPSHOT.contacts;
+  Object.assign(state, meta);
+  if(state.selected && !state.groups.some(g=>g.id===state.selected)) state.selected = null;
+  buildControls(); syncMarkers(); fitNext = true; render();
+}
+function setStatus(){
+  const el = $('#status'), tx = $('#statusText');
+  el.dataset.state = state.mode;
+  const mod = state.modified ? new Date(state.modified) : null;
+  const modTxt = mod && !isNaN(mod) ? ' · página editada por Charis el '+fmtDate(mod) : '';
+  if(state.mode==='loading') tx.textContent = 'Consultando la web de Charis…';
+  else if(state.mode==='live') tx.textContent = 'Actualizado ahora desde la ' + state.via + modTxt;
+  else if(state.mode==='stored') tx.textContent = 'Sin conexión con Charis · copia del ' + fmtDate(new Date(state.fetchedAt),{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) + modTxt;
+  else tx.textContent = 'Sin conexión con Charis · copia incluida del ' + fmtDate(new Date(SNAPSHOT.captured+'T12:00:00')) + modTxt;
+}
+async function refresh(){
+  const btn = $('#refresh'); btn.disabled = true;
+  const prevMode = state.mode;
+  state.mode = 'loading'; setStatus();
+  const prevSig = store.get('lastSig', null);
+  try{
+    const live = await loadLive();
+    applyData(live.groups, live.contacts, {mode:'live', modified:live.modified, fetchedAt:Date.now(), via:live.via});
+    const baseline = prevSig || SNAPSHOT.groups.map(g=>({id:idOf(g[0],g[1]), n:g[0], a:g[2], s:g[3]}));
+    computeNews(baseline); render();
+    store.set('lastLive', {groups:live.groups, contacts:live.contacts, modified:live.modified, fetchedAt:state.fetchedAt});
+    store.set('lastSig', signature());
+  }catch(e){
+    if(!state.groups.length || prevMode==='loading'){
+      const saved = store.get('lastLive', null);
+      if(saved && saved.groups && saved.groups.length){
+        applyData(saved.groups, saved.contacts, {mode:'stored', modified:saved.modified, fetchedAt:saved.fetchedAt});
+      } else {
+        applyData(SNAPSHOT.groups.map(g=>({name:g[0],city:g[1],address:g[2],schedule:g[3],realidad:g[4]})), SNAPSHOT.contacts, {mode:'snapshot', modified:SNAPSHOT.modified});
+      }
+    } else {
+      state.mode = prevMode;
+    }
+  }
+  setStatus();
+  btn.disabled = false;
+  refineLocations();
+}
+
+/* ───────────────────────── Eventos ───────────────────────── */
+let qTimer;
+$('#q').addEventListener('input', e=>{ clearTimeout(qTimer); qTimer = setTimeout(()=>{ state.filter.q = e.target.value; render(); }, 120); });
+$('#dayChips').addEventListener('click', e=>{
+  const b = e.target.closest('[data-day]'); if(!b) return;
+  state.filter.day = b.dataset.day==='all'||b.dataset.day==='today' ? b.dataset.day : +b.dataset.day;
+  document.querySelectorAll('#dayChips .chip').forEach(c=>c.setAttribute('aria-pressed', String(c===b)));
+  fitNext = true; render();
+});
+$('#realChips').addEventListener('click', e=>{
+  const b = e.target.closest('[data-fam]'); if(!b) return;
+  const f = state.filter.fam, k = b.dataset.fam;
+  if(f.size===3){ f.clear(); f.add(k); }            /* primer clic: ver solo esa realidad */
+  else if(f.has(k)){ f.delete(k); if(!f.size) ['RCCE','RCCeE','COM'].forEach(x=>f.add(x)); }
+  else f.add(k);
+  document.querySelectorAll('#realChips .chip').forEach(c=>c.setAttribute('aria-pressed', String(f.has(c.dataset.fam))));
+  fitNext = true; render();
+});
+$('#city').addEventListener('change', e=>{ state.filter.city = e.target.value; fitNext = true; render(); });
+$('#sort').addEventListener('change', e=>{ state.sort = e.target.value; render(); });
+$('#list').addEventListener('click', e=>{ const it = e.target.closest('.item'); if(it) select(it.dataset.id, true); });
+$('#list').addEventListener('keydown', e=>{ if((e.key==='Enter'||e.key===' ') && e.target.classList.contains('item')){ e.preventDefault(); select(e.target.dataset.id, true); } });
+$('#refresh').addEventListener('click', refresh);
+$('#near').addEventListener('click', ()=>{
+  const btn = $('#near');
+  if(!navigator.geolocation){ btn.textContent = 'Ubicación no disponible'; return; }
+  btn.disabled = true;
+  navigator.geolocation.getCurrentPosition(pos=>{
+    state.you = [pos.coords.latitude, pos.coords.longitude];
+    if(youMarker) map.removeLayer(youMarker);
+    youMarker = L.marker(state.you, {icon:L.divIcon({className:'', html:'<div class="you"></div>', iconSize:[14,14]}), title:'Tu ubicación', zIndexOffset:1000}).addTo(map);
+    const opt = $('#sort option[value="dist"]'); opt.disabled = false;
+    $('#sort').value = 'dist'; state.sort = 'dist';
+    render();
+    const vis = visibleGroups().filter(g=>g.dist!=null).slice(0,4).map(g=>[g.lat,g.lng]);
+    map.fitBounds([state.you, ...vis], {padding:[40,40], maxZoom:15});
+    btn.disabled = false;
+  }, ()=>{ btn.disabled = false; btn.lastChild.textContent = 'Permiso denegado'; setTimeout(()=>btn.lastChild.textContent='Cerca de mí', 2500); }, {enableHighAccuracy:false, timeout:10000, maximumAge:300000});
+});
+/* Recalcular «Hoy / Mañana» cada minuto si la página queda abierta */
+setInterval(()=>{ if(state.groups.length) render(); }, 60000);
+
+setTiles();
+refresh();
+})();
+</script>
+</body>
+</html>
