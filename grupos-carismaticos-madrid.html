@@ -14,7 +14,7 @@
   --bg:#f5f3ee; --panel:#ffffff; --ink:#1d1b18; --muted:#6c675f; --line:#e5e1d8;
   --chip:#efece5; --chip-on:#1d1b18; --chip-on-ink:#ffffff;
   --accent:#9b2335; --accent-soft:#f6e6e8;
-  --c-rcce:#2563eb; --c-rccee:#c2410c; --c-com:#7c3aed;
+  --c-rcce:#2563eb; --c-rccee:#c2410c; --c-com:#7c3aed; --c-ado:#0f766e;
   --ok:#15803d; --warn:#b45309; --off:#8a857c;
   --shadow:0 1px 2px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.06);
   --radius:12px;
@@ -26,7 +26,7 @@
     --bg:#131211; --panel:#1c1b19; --ink:#eeebe4; --muted:#a39e94; --line:#2f2d29;
     --chip:#262421; --chip-on:#eeebe4; --chip-on-ink:#131211;
     --accent:#e57c8b; --accent-soft:#3a2226;
-    --c-rcce:#60a5fa; --c-rccee:#fb923c; --c-com:#a78bfa;
+    --c-rcce:#60a5fa; --c-rccee:#fb923c; --c-com:#a78bfa; --c-ado:#2dd4bf;
     --ok:#4ade80; --warn:#fbbf24; --off:#8a857c;
     --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.35);
   }
@@ -35,7 +35,7 @@
   --bg:#131211; --panel:#1c1b19; --ink:#eeebe4; --muted:#a39e94; --line:#2f2d29;
   --chip:#262421; --chip-on:#eeebe4; --chip-on-ink:#131211;
   --accent:#e57c8b; --accent-soft:#3a2226;
-  --c-rcce:#60a5fa; --c-rccee:#fb923c; --c-com:#a78bfa;
+  --c-rcce:#60a5fa; --c-rccee:#fb923c; --c-com:#a78bfa; --c-ado:#2dd4bf;
   --ok:#4ade80; --warn:#fbbf24; --off:#8a857c;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.35);
 }
@@ -96,6 +96,7 @@ button,input,select{font:inherit;color:inherit}
 .item .where{font-size:12.5px;color:var(--muted);margin-top:2px}
 .item .meta{display:flex;gap:6px;align-items:center;margin-top:5px;font-size:11.5px;color:var(--muted)}
 .tag{border:1px solid var(--line);border-radius:999px;padding:1px 7px}
+.tag.tbc{border-color:var(--warn);color:var(--warn)}
 .badge{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border-radius:4px;padding:1px 5px;background:var(--accent);color:#fff}
 .badge.chg{background:var(--warn)}
 .empty{padding:30px 16px;text-align:center;color:var(--muted)}
@@ -140,7 +141,7 @@ button,input,select{font:inherit;color:inherit}
 <header class="top">
   <div class="brand">
     <h1>Grupos de oración carismáticos</h1>
-    <p class="sub">Comunidad de Madrid · datos de <a href="https://charisespana.com/grupos-de-oracion-madrid/" target="_blank" rel="noopener">Charis España</a></p>
+    <p class="sub">Comunidad de Madrid · datos de <a href="https://charisespana.com/grupos-de-oracion-madrid/" target="_blank" rel="noopener">Charis España</a> y adoraciones de parroquias de la zona norte</p>
   </div>
   <div class="status" id="status" data-state="loading" aria-live="polite">
     <span class="dot" aria-hidden="true"></span>
@@ -179,7 +180,7 @@ button,input,select{font:inherit;color:inherit}
       <summary>Contactos de cada realidad</summary>
       <dl id="contacts"></dl>
     </details>
-    <p class="foot">Fuente: <a href="https://charisespana.com/grupos-de-oracion-madrid/" target="_blank" rel="noopener">Servicio Nacional de Comunión CHARIS</a>. Si detecta un error o falta algún grupo, Charis pide comunicarlo a los líderes de su realidad. Mapa y ubicaciones © colaboradores de OpenStreetMap (teselas de openstreetmap.org / openstreetmap.fr, geocodificación con Nominatim).</p>
+    <p class="foot">Fuente: <a href="https://charisespana.com/grupos-de-oracion-madrid/" target="_blank" rel="noopener">Servicio Nacional de Comunión CHARIS</a>. Si detecta un error o falta algún grupo, Charis pide comunicarlo a los líderes de su realidad. Las adoraciones y misas («Adoración y misas») no son de Charis: salen de la web de cada parroquia o de directorios de misas, enlazados en cada ficha; las marcadas «Por confirmar» proceden de datos antiguos. Mapa y ubicaciones © colaboradores de OpenStreetMap (teselas de openstreetmap.org / openstreetmap.fr, geocodificación con Nominatim).</p>
   </aside>
   <div id="map" role="region" aria-label="Mapa de los grupos"></div>
 </main>
@@ -276,6 +277,26 @@ const SNAPSHOT = {
   ]
 };
 
+/* Adoraciones y misas que no publica Charis (zona norte de Madrid, Alcobendas y S. S. de los Reyes).
+   Cada fila lleva su fuente; «verified:false» = dato antiguo, pendiente de confirmar con la parroquia. Consultado el 24/10/2026. */
+const EXTRA = [
+  {name:'Adoración eucarística · Las Tablas', city:'Madrid', address:'Parroquia Sta. María Soledad Torres Acosta y S. Pedro Poveda (Las Tablas), Av. del Camino de Santiago, 35, Madrid, 28050',
+   schedule:'Jueves de 10:15 a 20:15 (excepto julio y agosto)', lat:40.5075, lng:-3.6735, source:'https://parroquialastablas.es/sacramentos/eucaristia/', verified:true},
+  {name:'Adoración con música · Las Tablas', city:'Madrid', address:'Parroquia Sta. María Soledad Torres Acosta y S. Pedro Poveda (Las Tablas), Av. del Camino de Santiago, 35, Madrid, 28050',
+   schedule:'Último jueves de mes, 21:00 (adoración con meditación y música)', lat:40.5075, lng:-3.6735, source:'https://parroquialastablas.es/', verified:true},
+  {name:'Adoración · San Matías', city:'Madrid', address:'Parroquia San Matías (San Lorenzo – Mar de Cristal), Plaza de la Iglesia, 1, Madrid, 28033',
+   schedule:'Miércoles, 20:30 a 21:30', lat:40.4730, lng:-3.6420, source:'https://misas.org/p/parroquia-de-san-matias-madrid', verified:false},
+  {name:'Adoración cantada · San Sebastián Mártir', city:'San Sebastián de los Reyes', address:'Parroquia San Sebastián Mártir, C/ Viento, 1, San Sebastián de los Reyes',
+   schedule:'Jueves, 20:00 a 21:15 (adoración cantada y meditada)', lat:40.5468, lng:-3.6262, source:'https://www.sansebastianmartir.es/', verified:true},
+  {name:'Misa de enfermos y adoración · La Moraleja', city:'Alcobendas', address:'Parroquia Ntra. Sra. de la Moraleja, C/ Nardo, 44, Alcobendas',
+   schedule:'2do lunes de cada mes, 19:00 (misa de enfermos y adoración de Misericordia)', lat:40.5180, lng:-3.6420, source:'https://parroquiamoraleja.es/misa-de-enfermos-y-adoracion-de-misericordia/', verified:true}
+].map(e=>Object.assign({realidad:'Adoración y misas', family:'ADO', extra:true}, e));
+
+/* «Zona norte»: Madrid capital al norte de ~Chamartín/Hortaleza, más Alcobendas y San Sebastián de los Reyes */
+const NORTH_TOWNS = ['alcobendas','san sebastian de los reyes'];
+const NORTH_LAT = 40.445;
+const isNorth = g => NORTH_TOWNS.includes(norm(g.city)) || (norm(g.city)==='madrid' && g.lat!=null && g.lat>=NORTH_LAT);
+
 /* Centros aproximados de municipios, para grupos nuevos que aún no tienen coordenadas */
 const TOWNS = {
   'madrid':[40.4168,-3.7038],'aranjuez':[40.0325,-3.6045],'san martin de la vega':[40.2090,-3.5700],
@@ -296,8 +317,10 @@ const TOWNS = {
 const FAMILIES = {
   RCCE:{label:'RCCE', color:'--c-rcce'},
   RCCeE:{label:'RCCeE', color:'--c-rccee'},
-  COM:{label:'Comunidades', color:'--c-com'}
+  COM:{label:'Comunidades', color:'--c-com'},
+  ADO:{label:'Adoración y misas', color:'--c-ado'}
 };
+const ALL_FAMS = Object.keys(FAMILIES);
 const DAYS = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'];
 const DAY_CHIPS = [['all','Todos'],['today','Hoy'],[1,'Lun'],[2,'Mar'],[3,'Mié'],[4,'Jue'],[5,'Vie'],[6,'Sáb'],[0,'Dom']];
 
@@ -347,14 +370,18 @@ function parseSchedule(text){
   const nth = [];
   const re = /\b([1-5])\s*(?:º|ª|o|do|to|ro|er|ero|ndo|rto|nd|th)\b/g; let m;
   while((m = re.exec(t))) nth.push(+m[1]);
-  return {days, hour, min, nth};
+  const last = /\bultimo\b/.test(t);
+  return {days, hour, min, nth, last};
 }
 function nextOccurrence(s, now){
   if(!s.days.length) return null;
   for(let k=0;k<70;k++){
     const d = new Date(now.getFullYear(), now.getMonth(), now.getDate()+k, s.hour??0, s.min??0);
     if(!s.days.includes(d.getDay())) continue;
-    if(s.nth.length && !s.nth.includes(Math.ceil(d.getDate()/7))) continue;
+    if(s.nth.length || s.last){
+      const isLast = new Date(d.getFullYear(), d.getMonth(), d.getDate()+7).getMonth() !== d.getMonth();
+      if(!s.nth.includes(Math.ceil(d.getDate()/7)) && !(s.last && isLast)) continue;
+    }
     const end = d.getTime() + 105*60000;
     if(s.hour==null || end > now.getTime()) return {date:d, live: s.hour!=null && d<=now && end>now};
   }
@@ -378,11 +405,13 @@ const familyOf = r => { const n = norm(r).replace(/\s/g,''); return n==='rcce' ?
 const idOf = (name,city) => norm(name)+'|'+norm(city);
 const addrKey = (addr,city) => norm(addr)+'|'+norm(city);
 const SEEDS = new Map(SNAPSHOT.groups.map(g=>[addrKey(g[2],g[1]), [g[5],g[6]]]));
+EXTRA.forEach(e=>{ const k = addrKey(e.address,e.city); if(!SEEDS.has(k)) SEEDS.set(k, [e.lat,e.lng]); });
 
 function makeGroup(o){
   const g = {
     id:idOf(o.name,o.city), name:o.name, city:o.city, address:o.address, schedule:o.schedule,
-    realidad:o.realidad, family:familyOf(o.realidad), sched:parseSchedule(o.schedule)
+    realidad:o.realidad, family:o.family||familyOf(o.realidad), sched:parseSchedule(o.schedule),
+    extra:!!o.extra, source:o.source||null, verified:o.verified!==false
   };
   const seed = SEEDS.get(addrKey(g.address,g.city));
   const town = TOWNS[norm(g.city)];
@@ -454,7 +483,7 @@ async function loadLive(){
 /* ───────────────────────── Estado ───────────────────────── */
 const state = {
   groups:[], contacts:[], mode:'loading', modified:null, fetchedAt:null,
-  filter:{q:'', day:'all', fam:new Set(['RCCE','RCCeE','COM']), city:'all'},
+  filter:{q:'', day:'all', fam:new Set(ALL_FAMS), city:'all'},
   sort:'next', you:null, selected:null, gen:0, news:{added:new Set(), changed:new Set(), removed:[]}
 };
 
@@ -526,7 +555,9 @@ function popupHtml(g){
     ${nl.text?`<p class="pnext ${nl.today?'today':''}">${esc(nl.text)}</p>`:''}
     <p>${esc(g.schedule)}</p>
     <p class="muted">${esc(g.address)}${norm(g.address).includes(norm(g.city))?'':' · '+esc(g.city)}</p>
-    <p><span class="muted">Realidad:</span> ${esc(g.realidad)}${c?`<br><span class="muted">Contacto:</span> ${linksHtml(c)}`:''}</p>
+    ${g.extra
+      ? `<p><span class="muted">Tipo:</span> ${esc(g.realidad)}${safeHref(g.source)?`<br><span class="muted">Fuente:</span> <a href="${esc(g.source)}" target="_blank" rel="noopener">${esc(g.source.replace(/^https?:\/\/(www\.)?/,'').split('/')[0])}</a>`:''}${g.verified?'':'<br><strong>Por confirmar:</strong> dato antiguo, consulte con la parroquia.'}</p>`
+      : `<p><span class="muted">Realidad:</span> ${esc(g.realidad)}${c?`<br><span class="muted">Contacto:</span> ${linksHtml(c)}`:''}</p>`}
     <a class="go" href="${esc(mapsUrl(g))}" target="_blank" rel="noopener">Cómo llegar</a>
     ${exact?'':'<span class="approx">Punto aproximado en el mapa; «Cómo llegar» usa la dirección exacta.</span>'}
   </div>`;
@@ -555,7 +586,7 @@ function visibleGroups(){
   const day = f.day==='today' ? now.getDay() : f.day;
   let out = state.groups.filter(g=>{
     if(!f.fam.has(g.family)) return false;
-    if(f.city!=='all' && norm(g.city)!==f.city) return false;
+    if(f.city==='norte' ? !isNorth(g) : (f.city!=='all' && norm(g.city)!==f.city)) return false;
     if(day!=='all' && !g.sched.days.includes(+day)) return false;
     if(q && !norm([g.name,g.address,g.city,g.realidad,g.schedule].join(' ')).includes(q)) return false;
     return true;
@@ -592,7 +623,7 @@ function render(){
           <h3>${esc(g.name)} ${badge}</h3>
           <div class="when">${nl.text?`<span class="next ${nl.today?'today':''}">${esc(nl.text)}</span> · `:''}<span>${esc(g.schedule)}</span></div>
           <div class="where">${esc(g.address.replace(/\s*,\s*$/,''))}${norm(g.address).includes(norm(g.city))?'':' · '+esc(g.city)}</div>
-          <div class="meta"><span class="tag">${esc(g.realidad)}</span>${dist}</div>
+          <div class="meta"><span class="tag">${esc(g.realidad)}</span>${g.verified?'':'<span class="tag tbc">Por confirmar</span>'}${dist}</div>
         </div>
       </li>`;
     }).join('');
@@ -632,7 +663,9 @@ function buildControls(){
   }).join('');
   const cities = [...new Set(state.groups.map(g=>g.city))].sort((a,b)=>norm(a)==='madrid'?-1:norm(b)==='madrid'?1:a.localeCompare(b,'es'));
   const cur = state.filter.city;
-  $('#city').innerHTML = '<option value="all">Toda la Comunidad</option>' + cities.map(c=>{
+  const nNorth = state.groups.filter(isNorth).length;
+  $('#city').innerHTML = '<option value="all">Toda la Comunidad</option>'
+    + `<option value="norte">Zona norte: Madrid norte, Alcobendas, S. S. de los Reyes (${nNorth})</option>` + cities.map(c=>{
     const n = state.groups.filter(g=>g.city===c).length;
     return `<option value="${esc(norm(c))}">${norm(c)==='madrid'?'Madrid capital':esc(c)} (${n})</option>`;
   }).join('');
@@ -643,7 +676,7 @@ function buildControls(){
 
 /* ───────────────────────── Novedades ───────────────────────── */
 function computeNews(prev){
-  const cur = new Map(state.groups.map(g=>[g.id,g]));
+  const cur = new Map(state.groups.filter(g=>!g.extra).map(g=>[g.id,g]));
   const added = new Set(), changed = new Set(), removed = [];
   if(prev){
     const pm = new Map(prev.map(p=>[p.id,p]));
@@ -663,7 +696,7 @@ function computeNews(prev){
   box.hidden = !parts.length;
   box.innerHTML = parts.length ? 'Desde tu última consulta · ' + parts.join(' · ') : '';
 }
-const signature = () => state.groups.map(g=>({id:g.id, n:g.name, a:g.address, s:g.schedule}));
+const signature = () => state.groups.filter(g=>!g.extra).map(g=>({id:g.id, n:g.name, a:g.address, s:g.schedule}));
 
 /* ───────────────────────── Geocodificación ───────────────────────── */
 const STREET_RE = /^(c\/|c\.\s|calle\s|av\.?\s|avda\.?\s|avenida\s|plaza\s|pl\.\s|pza\.?\s|glorieta\s|camino\s|pasaje\s|paseo\s|carretera\s|ctra\.?\s|ronda\s|traves[ií]a\s)/i;
@@ -756,7 +789,7 @@ async function refineLocations(){
 /* ───────────────────────── Carga ───────────────────────── */
 function applyData(rows, contacts, meta){
   state.gen++;
-  state.groups = rows.map(makeGroup);
+  state.groups = rows.concat(EXTRA).map(makeGroup);
   state.contacts = contacts && contacts.length ? contacts : SNAPSHOT.contacts;
   Object.assign(state, meta);
   if(state.selected && !state.groups.some(g=>g.id===state.selected)) state.selected = null;
@@ -813,8 +846,8 @@ $('#dayChips').addEventListener('click', e=>{
 $('#realChips').addEventListener('click', e=>{
   const b = e.target.closest('[data-fam]'); if(!b) return;
   const f = state.filter.fam, k = b.dataset.fam;
-  if(f.size===3){ f.clear(); f.add(k); }            /* primer clic: ver solo esa realidad */
-  else if(f.has(k)){ f.delete(k); if(!f.size) ['RCCE','RCCeE','COM'].forEach(x=>f.add(x)); }
+  if(f.size===ALL_FAMS.length){ f.clear(); f.add(k); }   /* primer clic: ver solo esa realidad */
+  else if(f.has(k)){ f.delete(k); if(!f.size) ALL_FAMS.forEach(x=>f.add(x)); }
   else f.add(k);
   document.querySelectorAll('#realChips .chip').forEach(c=>c.setAttribute('aria-pressed', String(f.has(c.dataset.fam))));
   fitNext = true; render();
