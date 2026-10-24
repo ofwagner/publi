@@ -14,7 +14,7 @@
   --bg:#f5f3ee; --panel:#ffffff; --ink:#1d1b18; --muted:#6c675f; --line:#e5e1d8;
   --chip:#efece5; --chip-on:#1d1b18; --chip-on-ink:#ffffff;
   --accent:#9b2335; --accent-soft:#f6e6e8;
-  --c-rcce:#2563eb; --c-rccee:#c2410c; --c-com:#7c3aed; --c-ado:#0f766e;
+  --c-rcce:#2563eb; --c-rccee:#c2410c; --c-com:#7c3aed; --c-ado:#0f766e; --c-fam:#be185d;
   --ok:#15803d; --warn:#b45309; --off:#8a857c;
   --shadow:0 1px 2px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.06);
   --radius:12px;
@@ -26,7 +26,7 @@
     --bg:#131211; --panel:#1c1b19; --ink:#eeebe4; --muted:#a39e94; --line:#2f2d29;
     --chip:#262421; --chip-on:#eeebe4; --chip-on-ink:#131211;
     --accent:#e57c8b; --accent-soft:#3a2226;
-    --c-rcce:#60a5fa; --c-rccee:#fb923c; --c-com:#a78bfa; --c-ado:#2dd4bf;
+    --c-rcce:#60a5fa; --c-rccee:#fb923c; --c-com:#a78bfa; --c-ado:#2dd4bf; --c-fam:#f472b6;
     --ok:#4ade80; --warn:#fbbf24; --off:#8a857c;
     --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.35);
   }
@@ -35,7 +35,7 @@
   --bg:#131211; --panel:#1c1b19; --ink:#eeebe4; --muted:#a39e94; --line:#2f2d29;
   --chip:#262421; --chip-on:#eeebe4; --chip-on-ink:#131211;
   --accent:#e57c8b; --accent-soft:#3a2226;
-  --c-rcce:#60a5fa; --c-rccee:#fb923c; --c-com:#a78bfa; --c-ado:#2dd4bf;
+  --c-rcce:#60a5fa; --c-rccee:#fb923c; --c-com:#a78bfa; --c-ado:#2dd4bf; --c-fam:#f472b6;
   --ok:#4ade80; --warn:#fbbf24; --off:#8a857c;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.35);
 }
@@ -141,7 +141,7 @@ button,input,select{font:inherit;color:inherit}
 <header class="top">
   <div class="brand">
     <h1>Grupos de oración carismáticos</h1>
-    <p class="sub">Comunidad de Madrid · datos de <a href="https://charisespana.com/grupos-de-oracion-madrid/" target="_blank" rel="noopener">Charis España</a> y adoraciones de parroquias de la zona norte</p>
+    <p class="sub">Comunidad de Madrid · datos de <a href="https://charisespana.com/grupos-de-oracion-madrid/" target="_blank" rel="noopener">Charis España</a> · adoraciones y misas de familias de parroquias</p>
   </div>
   <div class="status" id="status" data-state="loading" aria-live="polite">
     <span class="dot" aria-hidden="true"></span>
@@ -180,7 +180,7 @@ button,input,select{font:inherit;color:inherit}
       <summary>Contactos de cada realidad</summary>
       <dl id="contacts"></dl>
     </details>
-    <p class="foot">Fuente: <a href="https://charisespana.com/grupos-de-oracion-madrid/" target="_blank" rel="noopener">Servicio Nacional de Comunión CHARIS</a>. Si detecta un error o falta algún grupo, Charis pide comunicarlo a los líderes de su realidad. Las adoraciones y misas («Adoración y misas») no son de Charis: salen de la web de cada parroquia o de directorios de misas, enlazados en cada ficha; las marcadas «Por confirmar» proceden de datos antiguos. Mapa y ubicaciones © colaboradores de OpenStreetMap (teselas de openstreetmap.org / openstreetmap.fr, geocodificación con Nominatim).</p>
+    <p class="foot">Fuente: <a href="https://charisespana.com/grupos-de-oracion-madrid/" target="_blank" rel="noopener">Servicio Nacional de Comunión CHARIS</a>. Si detecta un error o falta algún grupo, Charis pide comunicarlo a los líderes de su realidad. Las categorías «Adoración y misas» y «Familias» no son de Charis: salen de la web de cada parroquia o de directorios de misas, enlazados en cada ficha; las marcadas «Por confirmar» proceden de datos antiguos. Mapa y ubicaciones © colaboradores de OpenStreetMap (teselas de openstreetmap.org / openstreetmap.fr, geocodificación con Nominatim).</p>
   </aside>
   <div id="map" role="region" aria-label="Mapa de los grupos"></div>
 </main>
@@ -277,8 +277,11 @@ const SNAPSHOT = {
   ]
 };
 
-/* Adoraciones y misas que no publica Charis (zona norte de Madrid, Alcobendas y S. S. de los Reyes).
-   Cada fila lleva su fuente; «verified:false» = dato antiguo, pendiente de confirmar con la parroquia. Consultado el 24/10/2026. */
+/* Adoraciones, misas y misas de familias que no publica Charis (Comunidad de Madrid).
+   Cada fila lleva su fuente; «verified:false» = dato antiguo o de agregador, pendiente de confirmar con la parroquia.
+   Consultado el 24/10/2026. */
+const ADO = {realidad:'Adoración y misas', family:'ADO'};
+const FAM = {realidad:'Familias', family:'FAM'};
 const EXTRA = [
   {name:'Adoración eucarística · Las Tablas', city:'Madrid', address:'Parroquia Sta. María Soledad Torres Acosta y S. Pedro Poveda (Las Tablas), Av. del Camino de Santiago, 35, Madrid, 28050',
    schedule:'Jueves de 10:15 a 20:15 (excepto julio y agosto)', lat:40.5075, lng:-3.6735, source:'https://parroquialastablas.es/sacramentos/eucaristia/', verified:true},
@@ -289,8 +292,39 @@ const EXTRA = [
   {name:'Adoración cantada · San Sebastián Mártir', city:'San Sebastián de los Reyes', address:'Parroquia San Sebastián Mártir, C/ Viento, 1, San Sebastián de los Reyes',
    schedule:'Jueves, 20:00 a 21:15 (adoración cantada y meditada)', lat:40.5468, lng:-3.6262, source:'https://www.sansebastianmartir.es/', verified:true},
   {name:'Misa de enfermos y adoración · La Moraleja', city:'Alcobendas', address:'Parroquia Ntra. Sra. de la Moraleja, C/ Nardo, 44, Alcobendas',
-   schedule:'2do lunes de cada mes, 19:00 (misa de enfermos y adoración de Misericordia)', lat:40.5180, lng:-3.6420, source:'https://parroquiamoraleja.es/misa-de-enfermos-y-adoracion-de-misericordia/', verified:true}
-].map(e=>Object.assign({realidad:'Adoración y misas', family:'ADO', extra:true}, e));
+   schedule:'2do lunes de cada mes, 19:00 (misa de enfermos y adoración de Misericordia)', lat:40.5180, lng:-3.6420, source:'https://parroquiamoraleja.es/misa-de-enfermos-y-adoracion-de-misericordia/', verified:true},
+  {name:'Adoración perpetua · San Germán', city:'Madrid', address:'Capilla de Adoración Perpetua San Germán (Tetuán), C/ Julián Besteiro, 28 (de día, entrada por C/ Orense, 57), Madrid, 28020',
+   schedule:'Todos los días, 24 h', lat:40.4530, lng:-3.6960, source:'https://www.archimadrid.org/index.php/oficina-de-informacion/noticias-madrid/capilla-de-adoracion-eucaristica-perpetua-en-san-german', verified:false},
+  {name:'Adoración perpetua · Beata M.ª Ana Mogas', city:'Madrid', address:'Parroquia Beata María Ana Mogas (Tres Olivos), C/ Altisidora, 6, Madrid, 28034',
+   schedule:'Todos los días, 24 h', lat:40.5000, lng:-3.6900, source:'https://anamogas.archimadrid.es/actividades-parroquiales/capilla-de-adoracion/', verified:true},
+  {name:'Adoración perpetua · Cachito de Cielo', city:'Madrid', address:'Capilla «Cachito de Cielo» (Centro), Travesía de Belén, 1, Madrid, 28004',
+   schedule:'Todos los días, 24 h', lat:40.4235, lng:-3.6960, source:'https://www.eldiario.es/madrid/somos/chueca/noticias/cachito-cielo-capilla-adoracion-perpetua_1_6471841.html', verified:true},
+  {name:'Adoración perpetua · Madre de los Sacerdotes', city:'Móstoles', address:'Capilla de Adoración Perpetua «Madre de los Sacerdotes», C/ Villaamil, 46, Móstoles, 28934',
+   schedule:'Todos los días, 24 h', lat:40.3240, lng:-3.8650, source:'https://adoracioneucaristicaperpetua.es/capillas-de-adoracion-perpetua-en-espana/', verified:false},
+  {name:'Adoración perpetua · Capilla San José', city:'Alcorcón', address:'Capilla de San José, C/ Los Pinos, 9, Alcorcón',
+   schedule:'Todos los días, 24 h', lat:40.3470, lng:-3.8270, source:'https://www.diocesisgetafe.es/capillas-de-adoracion-eucaristica-perpetua-aep/', verified:true},
+  {name:'Adoración perpetua · Leganés', city:'Leganés', address:'Capilla de Adoración Perpetua, C/ Las Nieves, 15, Leganés',
+   schedule:'Todos los días, 24 h', lat:40.3280, lng:-3.7640, source:'https://www.diocesisgetafe.es/capillas-de-adoracion-eucaristica-perpetua-aep/', verified:true},
+  {name:'Adoración perpetua · Getafe', city:'Getafe', address:'Capilla de Adoración Perpetua, C/ Hospital de San José, 16, Getafe',
+   schedule:'Todos los días, 24 h', lat:40.3080, lng:-3.7310, source:'https://www.diocesisgetafe.es/capillas-de-adoracion-eucaristica-perpetua-aep/', verified:true},
+  {name:'Hora Santa Hakuna · San Fermín de los Navarros', city:'Madrid', address:'Iglesia de San Fermín de los Navarros (Chamberí), P.º de Eduardo Dato, 10, Madrid, 28010',
+   schedule:'Jueves, 21:00 (hora santa con música)', lat:40.4325, lng:-3.6930, source:'https://www.padrenuestro.net/horas-santas-de-hakuna-en-todas-las-provincias-y-ciudad-de-espana/', verified:false},
+  {name:'Oración de los jueves · Catedral de la Almudena', city:'Madrid', address:'Catedral de Santa María la Real de la Almudena, C/ Bailén, 10, Madrid, 28013',
+   schedule:'Jueves, 19:30 (oración comunitaria; durante el curso)', lat:40.4155, lng:-3.7145, source:'https://archimadrid.org/index.php/oficina-de-informacion/noticias-madrid/jueves-en-la-catedral-el-grupo-de-hakuna-dirige-el-momento-de-oracion-comunitaria', verified:true},
+  /* Familias */
+  Object.assign({name:'Misa de familias · Santa Rita', city:'Madrid', address:'Parroquia Santa Rita (Chamberí; en la cripta), C/ Gaztambide, 75, Madrid, 28015',
+   schedule:'Domingo, 11:30 (misa de familias con niños)', lat:40.4385, lng:-3.7135, source:'https://santarita.archimadrid.es/horario-nuevo/', verified:true}, FAM),
+  Object.assign({name:'Misa de niños · Santa María Magdalena', city:'Madrid', address:'Parroquia Santa María Magdalena (Chamartín), C/ Drácena, 23, Madrid',
+   schedule:'Domingo, 11:00 (misa de niños)', lat:40.4480, lng:-3.6620, source:'https://santamariamagdalena.archimadrid.es/', verified:false}, FAM),
+  Object.assign({name:'Misa de familia · Virgen del Cortijo', city:'Madrid', address:'Parroquia Virgen del Cortijo (Hortaleza), C/ Oña, 91 B, Madrid, 28050',
+   schedule:'Domingo, 12:00 (misa de familia)', lat:40.4930, lng:-3.6610, source:'https://www.parroquiavirgendelcortijo.es/?page_id=49', verified:true}, FAM),
+  Object.assign({name:'Misa de familias · Santo Tomás Moro', city:'Majadahonda', address:'Parroquia Santo Tomás Moro, Av. Príncipe de Asturias, 26, Majadahonda',
+   schedule:'Domingo, 12:00 (misa de familias con niños)', lat:40.4720, lng:-3.8650, source:'https://parroquiatmoro.org/despacho-parroquial', verified:false}, FAM),
+  Object.assign({name:'Misa de familias · San Agustín', city:'Alcobendas', address:'Parroquia San Agustín, Av. de la Constitución, 106, Alcobendas',
+   schedule:'Domingo, 11:00 (misa de familias; horario de invierno)', lat:40.5370, lng:-3.6400, source:'https://horariosmisas.com/madrid/alcobendas/parroquia-de-san-agustin-alcobendas/', verified:false}, FAM),
+  Object.assign({name:'Misa de familias · San Pedro Apóstol', city:'Alcobendas', address:'Parroquia San Pedro Apóstol, Pl. Felipe Álvarez Gadea, 1, Alcobendas',
+   schedule:'Domingo, 11:00 (misa de familias; horario de invierno)', lat:40.5405, lng:-3.6410, source:'https://horariosmisas.com/madrid/alcobendas/parroquia-de-san-pedro-apostol-alcobendas/', verified:false}, FAM)
+].map(e=>Object.assign({}, ADO, {extra:true}, e));
 
 /* «Zona norte»: Madrid capital al norte de ~Chamartín/Hortaleza, más Alcobendas y San Sebastián de los Reyes */
 const NORTH_TOWNS = ['alcobendas','san sebastian de los reyes'];
@@ -318,7 +352,8 @@ const FAMILIES = {
   RCCE:{label:'RCCE', color:'--c-rcce'},
   RCCeE:{label:'RCCeE', color:'--c-rccee'},
   COM:{label:'Comunidades', color:'--c-com'},
-  ADO:{label:'Adoración y misas', color:'--c-ado'}
+  ADO:{label:'Adoración y misas', color:'--c-ado'},
+  FAM:{label:'Familias', color:'--c-fam'}
 };
 const ALL_FAMS = Object.keys(FAMILIES);
 const DAYS = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'];
@@ -365,15 +400,18 @@ function parseSchedule(text){
   const t = norm(text);
   const days = [];
   DAYS.forEach((d,i)=>{ if(new RegExp('\\b'+d).test(t)) days.push(i); });
+  if(/\btodos los dias\b/.test(t)) days.splice(0, days.length, 0,1,2,3,4,5,6);
+  const always = /\b24\s*h/.test(t);
   const tm = t.match(/(\d{1,2})\s*[:.]\s*(\d{2})/) || t.match(/\b(\d{1,2})\s*h\b/);
   const hour = tm ? +tm[1] : null, min = tm && tm[2] ? +tm[2] : 0;
   const nth = [];
   const re = /\b([1-5])\s*(?:º|ª|o|do|to|ro|er|ero|ndo|rto|nd|th)\b/g; let m;
   while((m = re.exec(t))) nth.push(+m[1]);
   const last = /\bultimo\b/.test(t);
-  return {days, hour, min, nth, last};
+  return {days, hour:always?null:hour, min:always?0:min, nth, last, always};
 }
 function nextOccurrence(s, now){
+  if(s.always) return {date:now, live:true, always:true};
   if(!s.days.length) return null;
   for(let k=0;k<70;k++){
     const d = new Date(now.getFullYear(), now.getMonth(), now.getDate()+k, s.hour??0, s.min??0);
@@ -393,6 +431,7 @@ function nextLabel(g, now){
   const d0 = new Date(now.getFullYear(),now.getMonth(),now.getDate());
   const d1 = new Date(o.date.getFullYear(),o.date.getMonth(),o.date.getDate());
   const diff = Math.round((d1-d0)/86400000);
+  if(o.always) return {text:'Abierta 24 h', today:true};
   if(o.live) return {text:'Ahora mismo', today:true};
   if(diff===0) return {text:'Hoy'+(hm?' · '+hm:''), today:true};
   if(diff===1) return {text:'Mañana'+(hm?' · '+hm:''), today:false};
