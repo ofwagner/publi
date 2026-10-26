@@ -108,6 +108,24 @@ button,input,select{font:inherit;color:inherit}
 .contacts dd{margin:0;word-break:break-word}
 .foot{margin:0;padding:8px 16px 14px;font-size:11.5px;color:var(--muted)}
 
+/* Pestañas y eventos */
+.tabs{display:flex;gap:4px;padding:6px 12px 0;border-bottom:1px solid var(--line)}
+.tab{border:0;background:none;padding:8px 10px;font-size:14px;font-weight:650;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tab .n{font-weight:500;font-size:12px;opacity:.7}
+.pane{display:flex;flex-direction:column;flex:1 1 auto;min-height:0}
+.pane[hidden]{display:none}
+.item.ev{grid-template-columns:46px 1fr;gap:12px}
+.ev .date{border:1px solid var(--line);border-radius:10px;text-align:center;padding:5px 0 4px;line-height:1.05;align-self:start;box-shadow:inset 0 3px 0 var(--c)}
+.ev .date b{display:block;font:700 19px/1.1 var(--serif)}
+.ev .date span{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.ev .date.mad{border-color:var(--accent)}
+.ev .meta{flex-wrap:wrap}
+.ev .meta a{font-size:12px}
+.tag.mad{border-color:var(--accent);color:var(--accent)}
+.cal-links{margin:8px 0 0;padding-left:18px;display:grid;gap:3px}
+
 /* Popups del mapa */
 .leaflet-popup-content-wrapper{border-radius:12px;background:var(--panel);color:var(--ink);box-shadow:var(--shadow)}
 .leaflet-popup-tip{background:var(--panel)}
@@ -132,6 +150,7 @@ button,input,select{font:inherit;color:inherit}
   #map{order:-1;height:46vh;min-height:300px;flex:none}
   .panel{border-right:0;border-top:1px solid var(--line)}
   .list{overflow:visible}
+  .pane{flex:none}
   .top{padding:12px 16px}
   .brand h1{font-size:19px}
 }
@@ -141,7 +160,7 @@ button,input,select{font:inherit;color:inherit}
 <header class="top">
   <div class="brand">
     <h1>Grupos de oración carismáticos</h1>
-    <p class="sub">Comunidad de Madrid · datos de <a href="https://charisespana.com/grupos-de-oracion-madrid/" target="_blank" rel="noopener">Charis España</a> · adoraciones y misas de familias de parroquias</p>
+    <p class="sub">Comunidad de Madrid · datos de <a href="https://charisespana.com/grupos-de-oracion-madrid/" target="_blank" rel="noopener">Charis España</a> · adoraciones, misas de familias y agenda de eventos</p>
   </div>
   <div class="status" id="status" data-state="loading" aria-live="polite">
     <span class="dot" aria-hidden="true"></span>
@@ -153,7 +172,12 @@ button,input,select{font:inherit;color:inherit}
 </header>
 
 <main class="layout">
-  <aside class="panel" aria-label="Listado de grupos">
+  <aside class="panel" aria-label="Grupos y eventos">
+    <div class="tabs" role="tablist">
+      <button class="tab" type="button" role="tab" data-tab="groups" aria-selected="true" aria-controls="paneGroups">Grupos</button>
+      <button class="tab" type="button" role="tab" data-tab="events" aria-selected="false" aria-controls="paneEvents">Eventos <span class="n" id="evCount"></span></button>
+    </div>
+    <div class="pane" id="paneGroups" role="tabpanel">
     <div class="controls">
       <label class="search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
@@ -180,7 +204,20 @@ button,input,select{font:inherit;color:inherit}
       <summary>Contactos de cada realidad</summary>
       <dl id="contacts"></dl>
     </details>
-    <p class="foot">Fuente: <a href="https://charisespana.com/grupos-de-oracion-madrid/" target="_blank" rel="noopener">Servicio Nacional de Comunión CHARIS</a>. Si detecta un error o falta algún grupo, Charis pide comunicarlo a los líderes de su realidad. Las categorías «Adoración y misas» y «Familias» no son de Charis: salen de la web de cada parroquia o de directorios de misas, enlazados en cada ficha; las marcadas «Por confirmar» proceden de datos antiguos. Mapa y ubicaciones © colaboradores de OpenStreetMap (teselas de openstreetmap.org / openstreetmap.fr, geocodificación con Nominatim).</p>
+    </div>
+    <div class="pane" id="paneEvents" role="tabpanel" hidden>
+      <div class="controls">
+        <div class="chips" id="evScope" role="group" aria-label="Ámbito"></div>
+        <div class="chips" id="evOrg" role="group" aria-label="Realidad"></div>
+      </div>
+      <div class="summary" aria-live="polite"><span id="evStatus"></span></div>
+      <ol class="list" id="evList"></ol>
+      <details class="contacts">
+        <summary>Más calendarios de eventos</summary>
+        <ul class="cal-links" id="evLinks"></ul>
+      </details>
+    </div>
+    <p class="foot">Fuente: <a href="https://charisespana.com/grupos-de-oracion-madrid/" target="_blank" rel="noopener">Servicio Nacional de Comunión CHARIS</a>. Si detecta un error o falta algún grupo, Charis pide comunicarlo a los líderes de su realidad. Las categorías «Adoración y misas» y «Familias» no son de Charis: salen de la web de cada parroquia o de directorios de misas, enlazados en cada ficha; las marcadas «Por confirmar» proceden de datos antiguos. Los eventos se leen al abrir la página de rcc-es.com, maranatha.es y rccee.es (con una lista incluida por si fallan); la fecha se deduce del texto de cada anuncio, así que conviene confirmarla en el enlace. Mapa y ubicaciones © colaboradores de OpenStreetMap (teselas de openstreetmap.org / openstreetmap.fr, geocodificación con Nominatim).</p>
   </aside>
   <div id="map" role="region" aria-label="Mapa de los grupos"></div>
 </main>
@@ -825,6 +862,263 @@ async function refineLocations(){
   if(gen===state.gen) $('#geoStatus').textContent = '';
 }
 
+/* ───────────────────────── Agenda de eventos ───────────────────────── */
+/* Lista fija consultada el 26/10/2026; se combina con lo que publiquen las webs al abrir la página */
+const EVENTS_CAPTURED = '2026-10-26';
+const ARCHISEVILLA_SVE = 'https://www.archisevilla.org/la-renovacion-carismatica-catolica-de-sevilla-propone-cuatro-seminarios-de-vida-en-el-espiritu-para-el-proximo-curso/';
+const EVENTS_SNAPSHOT = [
+  {title:'Asamblea de la RCCE en Cataluña', start:'2026-10-31', end:'2026-11-01', place:'Barcelona', org:'RCCE', link:'https://rcc-es.com/eventos/', verified:true},
+  {title:'Asamblea de la Zona Pastoral Occidental', start:'2026-11-21', place:'Sevilla', org:'RCCE', link:'https://rcc-es.com/eventos/', verified:true},
+  {title:'Retiro de Adviento de la Renovación Carismática de Sevilla', start:'2026-11-28', place:'Parroquia de San Joaquín, Sevilla', org:'RCCE', link:ARCHISEVILLA_SVE, verified:true},
+  {title:'Seminario de Vida en el Espíritu (régimen interno)', start:'2027-02-12', end:'2027-02-14', place:'Casa de Cursillos, San Juan de Aznalfarache (Sevilla)', org:'RCCE', link:ARCHISEVILLA_SVE, verified:true},
+  {title:'Seminario de Vida en el Espíritu', start:'2027-05-07', end:'2027-05-09', place:'Parroquia del Pilar, Sevilla', org:'RCCE', link:ARCHISEVILLA_SVE, verified:true},
+  {title:'Pentecostés 2027 · 60 años de la Renovación Carismática Católica', start:'2027-05-13', end:'2027-05-18', place:'Asís y Roma (Italia)', org:'CHARIS', link:'https://www.charis.international/es/calendario-es/', verified:true},
+  {title:'Asamblea Nacional de la RCCE 2027', start:'2027-07-02', end:'2027-07-04', place:'Lugar por anunciar', org:'RCCE', link:'https://rcc-es.com/eventos/lemas-y-predicadores-de-nuestras-asambleas-nacionales/', verified:false,
+   note:'Se celebra cada año el primer fin de semana de julio; fecha y lugar aún sin anunciar.'}
+];
+/* Webs WordPress que se leen al abrir: primero su API REST (admite CORS) y, si falla, su feed RSS vía proxy */
+const EVENT_SOURCES = [
+  {org:'RCCE',  site:'rcc-es.com',   base:'https://rcc-es.com',   cat:'eventos',   feed:'https://rcc-es.com/category/eventos/feed/'},
+  {org:'RCCeE', site:'maranatha.es', base:'https://maranatha.es', cat:'asambleas', feed:'https://maranatha.es/category/asambleas/feed/'},
+  {org:'RCCeE', site:'maranatha.es', base:'https://maranatha.es', cat:'retiros',   feed:'https://maranatha.es/category/retiros/feed/'},
+  {org:'RCCeE', site:'rccee.es',     base:'https://rccee.es',     cat:null,        feed:'https://rccee.es/feed/', datedOnly:true}
+];
+const EVENT_LINKS = [
+  ['https://rcc-es.com/eventos/','RCCE · rcc-es.com/eventos'],
+  ['https://rccee.es/retiros/','RCCeE · rccee.es/retiros'],
+  ['https://maranatha.es/category/asambleas/encuentro-zona-centro/','RCCeE Maranatha · Encuentros Zona Centro'],
+  ['https://maranatha.es/category/retiros/','RCCeE Maranatha · Retiros'],
+  ['https://www.charis.international/es/calendario-es/','CHARIS internacional · Calendario'],
+  ['https://charisespana.com/','Charis España'],
+  ['https://www.archisevilla.org/tag/renovacion-carismatica/','RCC Sevilla (Archidiócesis de Sevilla)'],
+  ['https://www.rccvalencia.com/','RCC Valencia'],
+  ['https://rccburgos.org/','RCC Burgos'],
+  ['https://deretiro.es/parroquias/rcce-renovacion-carismatica-catolica-espana/','DeRetiro · agenda de la RCCE']
+];
+const EV_ORGS = {RCCE:{label:'RCCE', color:'--c-rcce'}, RCCeE:{label:'RCCeE', color:'--c-rccee'}, CHARIS:{label:'Charis', color:'--c-com'}, OTRO:{label:'Otros', color:'--c-ado'}};
+const EV_SCOPES = [['all','Toda España'],['mad','Comunidad de Madrid'],['rest','Resto']];
+const PROXIES = [
+  u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
+  u=>'https://corsproxy.io/?url='+encodeURIComponent(u),
+  u=>'https://api.codetabs.com/v1/proxy/?quest='+encodeURIComponent(u)
+];
+const MONTHS = {enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,julio:6,agosto:7,septiembre:8,setiembre:8,octubre:9,noviembre:10,diciembre:11,
+  ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sept:8,sep:8,oct:9,nov:10,dic:11};
+const MONTH_RE = Object.keys(MONTHS).sort((a,b)=>b.length-a.length).join('|');
+const TXT_DATE = new RegExp('((?:\\d{1,2}\\s*(?:,|y|al|a|-|–)\\s*)*\\d{1,2})\\s+(?:de\\s+)?('+MONTH_RE+')\\.?\\b(?:\\s*(?:de|del)?\\s*(\\d{4}))?','g');
+const NUM_DATE = /\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b(?:\s*(?:-|–|al|a)\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\b)?/;
+const EV_TOWNS = Object.assign({'comunidad de madrid':TOWNS.madrid, 'pozuelo':TOWNS['pozuelo de alarcon'], 'rivas':TOWNS['rivas vaciamadrid'], 'sanse':TOWNS['san sebastian de los reyes']}, TOWNS);
+const TOWN_RE = new RegExp('\\b('+Object.keys(EV_TOWNS).sort((a,b)=>b.length-a.length).map(k=>k.replace(/[.*+?^${}()|[\]\\-]/g,'\\$&')).join('|')+')\\b');
+
+const htmlText = s => { try{ return new DOMParser().parseFromString(String(s||''),'text/html').body.textContent.replace(/\s+/g,' ').trim(); }catch(e){ return ''; } };
+const dayStart = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const isoDay = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const titleCase = s => s.replace(/(^|\s)(\S)/g,(m,a,b)=>a+b.toUpperCase()).replace(/\b(De|Del|La|Las|Los|El)\b/g,w=>w.toLowerCase());
+
+/* Fecha del evento a partir del texto de la entrada. Sin año, se toma el de publicación (o el siguiente si el mes ya pasó). */
+function parseEventDates(text, pub){
+  const t = norm(text), p = pub ? new Date(pub) : new Date();
+  const ref = isNaN(p) ? new Date() : p;
+  const yearFor = (m, y) => y ? +y : (m < ref.getMonth()-1 ? ref.getFullYear()+1 : ref.getFullYear());
+  const valid = d => d && !isNaN(d) && d.getFullYear()>2000;
+  const n = t.match(NUM_DATE);
+  const hits = [];
+  let m; TXT_DATE.lastIndex = 0;
+  while((m = TXT_DATE.exec(t))){
+    const days = m[1].match(/\d{1,2}/g).map(Number).filter(d=>d>=1 && d<=31);
+    if(days.length) hits.push({i:m.index, j:m.index+m[0].length, days, mon:MONTHS[m[2]], year:m[3]});
+  }
+  if(hits.length && (!n || hits[0].i < t.indexOf(n[0]))){
+    const a = hits[0]; let b = null;
+    if(hits[1] && /^\s*(?:y|al|a|-|–|hasta el)\s*$/.test(t.slice(a.j, hits[1].i))) b = hits[1];
+    const y = a.year || (b && b.year);
+    const sy = yearFor(a.mon, y);
+    const start = new Date(sy, a.mon, a.days[0]);
+    let end = b ? new Date(b.year ? +b.year : (b.mon < a.mon ? sy+1 : sy), b.mon, b.days[b.days.length-1])
+                : new Date(sy, a.mon, a.days[a.days.length-1]);
+    if(end < start) end = start;
+    return valid(start) ? {start, end} : null;
+  }
+  if(n){
+    const start = new Date(+n[3], +n[2]-1, +n[1]);
+    const end = n[4] ? new Date(+n[6], +n[5]-1, +n[4]) : start;
+    return valid(start) ? {start, end: end<start?start:end} : null;
+  }
+  return null;
+}
+function madridTown(text){ const m = norm(text).match(TOWN_RE); return m ? m[1] : null; }
+
+async function getJson(u){ const r = await fetchTimeout(u, 9000, {cache:'default'}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
+async function postsViaRest(src){
+  const api = src.base+'/wp-json/wp/v2/';
+  let q = 'posts?per_page=30&_fields=title,link,date,excerpt,content';
+  if(src.cat){
+    const cats = await getJson(api+'categories?slug='+src.cat+'&_fields=id');
+    if(!Array.isArray(cats) || !cats.length) throw new Error('sin categoría');
+    const kids = await getJson(api+'categories?parent='+cats[0].id+'&per_page=50&_fields=id').catch(()=>[]);
+    q += '&categories='+[cats[0].id].concat(Array.isArray(kids)?kids.map(k=>k.id):[]).join(',');
+  }
+  const posts = await getJson(api+q);
+  if(!Array.isArray(posts)) throw new Error('respuesta no válida');
+  return posts.map(p=>({title:htmlText(p.title&&p.title.rendered), link:p.link, date:p.date,
+    text:htmlText(((p.excerpt&&p.excerpt.rendered)||'')+' '+String((p.content&&p.content.rendered)||'').slice(0,6000))}));
+}
+async function postsViaRss(src){
+  for(const px of PROXIES){
+    try{
+      const r = await fetchTimeout(px(src.feed), 12000);
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      const xml = new DOMParser().parseFromString(await r.text(), 'text/xml');
+      const items = [...xml.getElementsByTagName('item')];
+      if(!items.length) throw new Error('vacío');
+      return items.map(it=>{
+        const tag = s => { const el = it.getElementsByTagName(s)[0]; return el ? el.textContent : ''; };
+        return {title:htmlText(tag('title')), link:tag('link').trim(), date:tag('pubDate'),
+          text:htmlText(tag('description')+' '+tag('content:encoded').slice(0,6000))};
+      });
+    }catch(e){}
+  }
+  throw new Error('rss');
+}
+
+const ev = {mode:'loading', items:[], ok:[], failed:[], storedAt:null, scope:'all', orgs:new Set(Object.keys(EV_ORGS)), selected:null};
+function postToEvent(p, src){
+  const d = parseEventDates(p.title, p.date) || parseEventDates(p.text.slice(0,1500), p.date);
+  if(!d && src.datedOnly) return null;
+  const town = madridTown(p.title+' · '+p.text.slice(0,800));
+  return {title:p.title, start:d?d.start:null, end:d?d.end:null, pub:p.date?new Date(p.date):null, org:src.org,
+    place: town ? titleCase(town==='comunidad de madrid' ? 'Comunidad de Madrid' : town) : '', town, link:safeHref(p.link)?p.link:null,
+    site:src.site, verified:true, live:true};
+}
+function snapshotEvent(e){
+  const town = madridTown(e.place);
+  return Object.assign({}, e, {start:isoDay(e.start), end:isoDay(e.end||e.start), town, site:(e.link||'').replace(/^https?:\/\/(www\.)?/,'').split('/')[0]});
+}
+function buildEvents(postsBySource){
+  const out = [], seen = new Set();
+  /* Repetidos: mismo enlace y día, o mismo título y día (las entradas leídas de la web van primero y prevalecen) */
+  const keys = e => { const d = e.start ? e.start.toDateString() : ''; return [norm(e.title)+'|'+d].concat(e.link ? [e.link.replace(/[?#].*$/,'').replace(/\/$/,'')+'|'+d] : []); };
+  postsBySource.forEach((posts,i)=>(posts||[]).forEach(p=>{ const e = postToEvent(p, EVENT_SOURCES[i]); if(e) out.push(e); }));
+  EVENTS_SNAPSHOT.map(snapshotEvent).forEach(e=>out.push(e));
+  const today = dayStart(new Date()), recent = Date.now() - 45*86400000;
+  return out.filter(e=>{
+    if(e.start ? (e.end||e.start) < today : !(e.pub && e.pub.getTime() > recent)) return false;
+    const ks = keys(e); if(ks.some(k=>seen.has(k))) return false; ks.forEach(k=>seen.add(k)); return true;
+  }).map((e,i)=>{
+    e.id = 'ev'+i; e.mad = !!e.town;
+    const t = e.town && EV_TOWNS[e.town];
+    if(t && e.lat==null){ e.lat = t[0]; e.lng = t[1]; e.approx = true; }
+    return e;
+  }).sort((a,b)=>(a.start?a.start:9e15)-(b.start?b.start:9e15) || (b.pub||0)-(a.pub||0));
+}
+
+async function loadEvents(){
+  ev.mode = 'loading'; renderEvents();
+  const results = await Promise.all(EVENT_SOURCES.map(async (src,i)=>{
+    const ck = 'ev:v1:'+i;
+    try{
+      let posts;
+      try{ posts = await postsViaRest(src); }catch(e){ posts = await postsViaRss(src); }
+      store.set(ck, {posts, t:Date.now()});
+      return {posts, ok:true};
+    }catch(e){
+      const c = store.get(ck, null);
+      return {posts: c ? c.posts : null, ok:false, t: c ? c.t : null};
+    }
+  }));
+  const sites = (f) => [...new Set(EVENT_SOURCES.filter((s,i)=>f(results[i])).map(s=>s.site))];
+  ev.ok = sites(r=>r.ok); ev.failed = sites(r=>!r.ok).filter(s=>!ev.ok.includes(s));
+  const cached = results.filter(r=>!r.ok && r.posts).map(r=>r.t);
+  ev.storedAt = cached.length ? Math.min(...cached) : null;
+  ev.mode = ev.ok.length ? 'live' : (ev.storedAt ? 'stored' : 'snapshot');
+  ev.items = buildEvents(results.map(r=>r.posts));
+  syncEventMarkers(); renderEvents();
+}
+
+const evLayer = L.layerGroup();
+const evMarkers = new Map();
+function fmtEvDates(e){
+  if(!e.start) return 'Fecha: ver en la web';
+  const o = {weekday:'short', day:'numeric', month:'short'};
+  const sameDay = !e.end || e.end.getTime()===e.start.getTime();
+  const s = fmtDate(e.start, sameDay ? Object.assign({year:'numeric'},o) : o);
+  return sameDay ? s : s+' – '+fmtDate(e.end, Object.assign({year:'numeric'},o));
+}
+function evPopup(e){
+  return `<div class="pop"><h3>${esc(e.title)}</h3><p class="pnext">${esc(fmtEvDates(e))}</p>
+    ${e.place?`<p class="muted">${esc(e.place)}</p>`:''}${e.note?`<p>${esc(e.note)}</p>`:''}
+    ${e.link?`<a class="go" href="${esc(e.link)}" target="_blank" rel="noopener">Ver en la web</a>`:''}
+    ${e.approx?'<span class="approx">Punto aproximado: centro del municipio.</span>':''}</div>`;
+}
+function syncEventMarkers(){
+  evLayer.clearLayers(); evMarkers.clear();
+  ev.items.filter(e=>e.lat!=null).forEach(e=>{
+    const color = cssVar(EV_ORGS[e.org].color) || '#666';
+    const m = L.circleMarker([e.lat,e.lng], {radius:8, color:e.approx?color:'#ffffff', weight:2, dashArray:e.approx?'3 3':null, fillColor:color, fillOpacity:e.approx?.55:.92});
+    m.bindPopup(()=>evPopup(e), {maxWidth:300}); m.bindTooltip(e.title, {direction:'top', offset:[0,-8]});
+    evMarkers.set(e.id, m); evLayer.addLayer(m);
+  });
+}
+function visibleEvents(){
+  return ev.items.filter(e=>ev.orgs.has(e.org) && (ev.scope==='all' || (ev.scope==='mad') === e.mad));
+}
+function renderEvents(){
+  $('#evScope').innerHTML = EV_SCOPES.map(([v,l])=>`<button class="chip" type="button" data-scope="${v}" aria-pressed="${ev.scope===v}">${l}</button>`).join('');
+  $('#evOrg').innerHTML = Object.entries(EV_ORGS).map(([k,o])=>{
+    const n = ev.items.filter(e=>e.org===k).length;
+    return n ? `<button class="chip" type="button" data-org="${k}" aria-pressed="${ev.orgs.has(k)}" style="--c:var(${o.color})"><span class="sw"></span>${o.label} <span style="opacity:.6">${n}</span></button>` : '';
+  }).join('');
+  const st = $('#evStatus');
+  if(ev.mode==='loading') st.textContent = 'Buscando eventos en '+[...new Set(EVENT_SOURCES.map(s=>s.site))].join(', ')+'…';
+  else if(ev.mode==='live') st.textContent = 'Actualizado ahora desde '+ev.ok.join(', ')+(ev.failed.length?' · sin respuesta de '+ev.failed.join(', '):'');
+  else if(ev.mode==='stored') st.textContent = 'Sin conexión con las webs · copia guardada del '+fmtDate(new Date(ev.storedAt),{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  else st.textContent = 'Sin conexión con las webs · lista incluida del '+fmtDate(isoDay(EVENTS_CAPTURED));
+  const vis = visibleEvents();
+  $('#evCount').textContent = ev.items.length ? String(ev.items.length) : '';
+  $('#evList').innerHTML = vis.length ? vis.map(e=>{
+    const o = EV_ORGS[e.org];
+    const badge = e.start ? `<b>${e.start.getDate()}</b><span>${esc(fmtDate(e.start,{month:'short'}).replace('.',''))}</span>` : '<b>?</b><span>fecha</span>';
+    return `<li class="item ev ${ev.selected===e.id?'sel':''}" data-ev="${esc(e.id)}" tabindex="0" style="--c:var(${o.color})">
+      <span class="date ${e.mad?'mad':''}" aria-hidden="true">${badge}</span>
+      <div>
+        <h3>${esc(e.title)}</h3>
+        <div class="when"><span class="next">${esc(fmtEvDates(e))}</span></div>
+        ${e.place?`<div class="where">${esc(e.place)}</div>`:''}
+        ${e.note?`<div class="where">${esc(e.note)}</div>`:''}
+        <div class="meta"><span class="tag" style="border-color:var(${o.color})">${o.label}</span>${e.mad?'<span class="tag mad">Madrid</span>':''}${e.verified?'':'<span class="tag tbc">Por confirmar</span>'}${e.link?`<a href="${esc(e.link)}" target="_blank" rel="noopener">Ver en ${esc(e.site||'la web')}</a>`:''}</div>
+      </div>
+    </li>`;
+  }).join('') : `<li class="empty">${ev.mode==='loading'?'Cargando…':'No hay próximos eventos con estos filtros.'}</li>`;
+}
+function selectEvent(id){
+  ev.selected = id;
+  document.querySelectorAll('#evList .item.sel').forEach(el=>el.classList.remove('sel'));
+  const el = document.querySelector(`#evList [data-ev="${CSS.escape(id)}"]`); if(el) el.classList.add('sel');
+  const m = evMarkers.get(id);
+  if(m){ map.flyTo(m.getLatLng(), Math.max(map.getZoom(),12), {duration:.6}); setTimeout(()=>m.openPopup(), 650); if(window.innerWidth<=860) $('#map').scrollIntoView({behavior:'smooth'}); }
+}
+function setTab(name){
+  const events = name==='events';
+  $('#paneGroups').hidden = events; $('#paneEvents').hidden = !events;
+  document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected', String(b.dataset.tab===name)));
+  if(events){ map.removeLayer(layer); map.addLayer(evLayer); const pts = ev.items.filter(e=>e.lat!=null).map(e=>[e.lat,e.lng]); if(pts.length) map.fitBounds(pts,{padding:[40,40], maxZoom:12}); }
+  else { map.removeLayer(evLayer); map.addLayer(layer); }
+  store.set('tab', name);
+}
+$('.tabs').addEventListener('click', e=>{ const b = e.target.closest('.tab'); if(b) setTab(b.dataset.tab); });
+$('#evScope').addEventListener('click', e=>{ const b = e.target.closest('[data-scope]'); if(!b) return; ev.scope = b.dataset.scope; renderEvents(); });
+$('#evOrg').addEventListener('click', e=>{
+  const b = e.target.closest('[data-org]'); if(!b) return;
+  const f = ev.orgs, k = b.dataset.org, all = Object.keys(EV_ORGS);
+  if(f.size===all.length){ f.clear(); f.add(k); }
+  else if(f.has(k)){ f.delete(k); if(!f.size) all.forEach(x=>f.add(x)); }
+  else f.add(k);
+  renderEvents();
+});
+$('#evList').addEventListener('click', e=>{ if(e.target.closest('a')) return; const it = e.target.closest('[data-ev]'); if(it) selectEvent(it.dataset.ev); });
+$('#evList').addEventListener('keydown', e=>{ if((e.key==='Enter'||e.key===' ') && e.target.dataset && e.target.dataset.ev){ e.preventDefault(); selectEvent(e.target.dataset.ev); } });
+$('#evLinks').innerHTML = EVENT_LINKS.map(([u,l])=>`<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(l)}</a></li>`).join('');
+
 /* ───────────────────────── Carga ───────────────────────── */
 function applyData(rows, contacts, meta){
   state.gen++;
@@ -895,7 +1189,7 @@ $('#city').addEventListener('change', e=>{ state.filter.city = e.target.value; f
 $('#sort').addEventListener('change', e=>{ state.sort = e.target.value; render(); });
 $('#list').addEventListener('click', e=>{ const it = e.target.closest('.item'); if(it) select(it.dataset.id, true); });
 $('#list').addEventListener('keydown', e=>{ if((e.key==='Enter'||e.key===' ') && e.target.classList.contains('item')){ e.preventDefault(); select(e.target.dataset.id, true); } });
-$('#refresh').addEventListener('click', refresh);
+$('#refresh').addEventListener('click', ()=>{ refresh(); loadEvents(); });
 $('#near').addEventListener('click', ()=>{
   const btn = $('#near');
   if(!navigator.geolocation){ btn.textContent = 'Ubicación no disponible'; return; }
@@ -917,6 +1211,8 @@ setInterval(()=>{ if(state.groups.length) render(); }, 60000);
 
 setTiles();
 refresh();
+loadEvents();
+if(store.get('tab','groups')==='events') setTab('events');
 })();
 </script>
 </body>
