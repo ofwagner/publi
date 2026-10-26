@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Grupos carismáticos · Madrid</title>
-<meta name="description" content="Mapa interactivo de los grupos de oración de la Renovación Carismática Católica en la Comunidad de Madrid, con datos de Charis España actualizados al abrir.">
+<title>Grupos carismáticos · España</title>
+<meta name="description" content="Mapa interactivo de los grupos de oración carismáticos de España por provincias y comunidades, con datos de Charis España actualizados al abrir, adoraciones, misas de familias y agenda de eventos.">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -125,6 +125,10 @@ button,input,select{font:inherit;color:inherit}
 .ev .meta a{font-size:12px}
 .tag.mad{border-color:var(--accent);color:var(--accent)}
 .cal-links{margin:8px 0 0;padding-left:18px;display:grid;gap:3px}
+/* Burbujas de provincia en la vista de España */
+.bub{display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--accent);color:#fff;font:700 12.5px/1 var(--sans);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);cursor:pointer}
+.bub.wait{background:var(--off)}
+.row select[hidden]{display:none}
 
 /* Popups del mapa */
 .leaflet-popup-content-wrapper{border-radius:12px;background:var(--panel);color:var(--ink);box-shadow:var(--shadow)}
@@ -160,7 +164,7 @@ button,input,select{font:inherit;color:inherit}
 <header class="top">
   <div class="brand">
     <h1>Grupos de oración carismáticos</h1>
-    <p class="sub">Comunidad de Madrid · datos de <a href="https://charisespana.com/grupos-de-oracion-madrid/" target="_blank" rel="noopener">Charis España</a> · adoraciones, misas de familias y agenda de eventos</p>
+    <p class="sub">España · datos de <a href="https://charisespana.com/grupos-de-oracion/" target="_blank" rel="noopener">Charis España</a> · adoraciones, misas de familias y agenda de eventos</p>
   </div>
   <div class="status" id="status" data-state="loading" aria-live="polite">
     <span class="dot" aria-hidden="true"></span>
@@ -179,6 +183,10 @@ button,input,select{font:inherit;color:inherit}
     </div>
     <div class="pane" id="paneGroups" role="tabpanel">
     <div class="controls">
+      <div class="row">
+        <select id="ccaa" aria-label="Comunidad autónoma"></select>
+        <select id="prov" aria-label="Provincia"></select>
+      </div>
       <label class="search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
         <input id="q" type="search" placeholder="Buscar grupo, parroquia, calle, barrio…" autocomplete="off" aria-label="Buscar">
@@ -217,7 +225,7 @@ button,input,select{font:inherit;color:inherit}
         <ul class="cal-links" id="evLinks"></ul>
       </details>
     </div>
-    <p class="foot">Fuente: <a href="https://charisespana.com/grupos-de-oracion-madrid/" target="_blank" rel="noopener">Servicio Nacional de Comunión CHARIS</a>. Si detecta un error o falta algún grupo, Charis pide comunicarlo a los líderes de su realidad. Las categorías «Adoración y misas» y «Familias» no son de Charis: salen de la web de cada parroquia o de directorios de misas, enlazados en cada ficha; las marcadas «Por confirmar» proceden de datos antiguos. Los eventos se leen al abrir la página de rcc-es.com, maranatha.es y rccee.es (con una lista incluida por si fallan); la fecha se deduce del texto de cada anuncio, así que conviene confirmarla en el enlace. Mapa y ubicaciones © colaboradores de OpenStreetMap (teselas de openstreetmap.org / openstreetmap.fr, geocodificación con Nominatim).</p>
+    <p class="foot">Fuente: <a href="https://charisespana.com/grupos-de-oracion/" target="_blank" rel="noopener">Servicio Nacional de Comunión CHARIS</a>. Si detecta un error o falta algún grupo, Charis pide comunicarlo a los líderes de su realidad. Las categorías «Adoración y misas» y «Familias» no son de Charis: salen de la web de cada parroquia o de directorios de misas, enlazados en cada ficha; las marcadas «Por confirmar» proceden de datos antiguos. Los eventos se leen al abrir la página de rcc-es.com, maranatha.es y rccee.es (con una lista incluida por si fallan); la fecha se deduce del texto de cada anuncio, así que conviene confirmarla en el enlace. Mapa y ubicaciones © colaboradores de OpenStreetMap (teselas de openstreetmap.org / openstreetmap.fr, geocodificación con Nominatim).</p>
   </aside>
   <div id="map" role="region" aria-label="Mapa de los grupos"></div>
 </main>
@@ -228,17 +236,27 @@ button,input,select{font:inherit;color:inherit}
 'use strict';
 
 /* ───────────────────────── Configuración ───────────────────────── */
-const PAGE_URL = 'https://charisespana.com/grupos-de-oracion-madrid/';
+const PAGE_URL = 'https://charisespana.com/grupos-de-oracion/';
 const WP = 'https://public-api.wordpress.com/rest/v1.1/sites/';
+const WP2 = 'https://public-api.wordpress.com/wp/v2/sites/charisespana.com/';
 const WP_FIELDS = 'fields=content,modified,URL';
-const SOURCES = [
-  {label:'web de Charis', kind:'jsonp', url:()=>WP+'175046798/posts/2932?'+WP_FIELDS},
-  {label:'web de Charis', kind:'jsonp', url:()=>WP+'charisespana.com/posts/slug:grupos-de-oracion-madrid?'+WP_FIELDS},
-  {label:'web de Charis', kind:'json',  url:()=>WP+'175046798/posts/2932?'+WP_FIELDS+'&_='+Date.now()},
-  {label:'web de Charis (vía proxy)', kind:'html', url:()=>'https://api.allorigins.win/raw?url='+encodeURIComponent(PAGE_URL+'?_='+Date.now())},
-  {label:'web de Charis (vía proxy)', kind:'html', url:()=>'https://corsproxy.io/?url='+encodeURIComponent(PAGE_URL)},
-  {label:'web de Charis (vía proxy)', kind:'html', url:()=>'https://api.codetabs.com/v1/proxy/?quest='+encodeURIComponent(PAGE_URL)}
+const CHARIS_PROXIES = [
+  u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u+'?_='+Date.now()),
+  u=>'https://corsproxy.io/?url='+encodeURIComponent(u),
+  u=>'https://api.codetabs.com/v1/proxy/?quest='+encodeURIComponent(u)
 ];
+/* Fuentes para leer la página de Charis de una provincia («grupos-de-oracion-xxx»), por orden de preferencia */
+function sourcesFor(slug){
+  const page = 'https://charisespana.com/'+slug+'/';
+  return [].concat(
+    slug==='grupos-de-oracion-madrid' ? [
+      {label:'web de Charis', kind:'jsonp', url:()=>WP+'175046798/posts/2932?'+WP_FIELDS},
+      {label:'web de Charis', kind:'json',  url:()=>WP+'175046798/posts/2932?'+WP_FIELDS+'&_='+Date.now()}] : [],
+    [{label:'web de Charis', kind:'jsonp', url:()=>WP+'charisespana.com/posts/slug:'+slug+'?'+WP_FIELDS},
+     {label:'web de Charis', kind:'wp2',   url:()=>WP2+'pages?slug='+slug+'&_fields=content,modified,link'}],
+    CHARIS_PROXIES.map(px=>({label:'web de Charis (vía proxy)', kind:'html', url:()=>px(page)}))
+  );
+}
 
 /* Copia de seguridad incluida en el archivo (página de Charis modificada el 27/01/2025, copiada el 29/09/2026).
    Las coordenadas son aproximadas; al abrir se afinan con el geocodificador y se guardan en el navegador. */
@@ -314,7 +332,7 @@ const SNAPSHOT = {
   ]
 };
 
-/* Adoraciones, misas y misas de familias que no publica Charis (Comunidad de Madrid).
+/* Adoraciones, misas y misas de familias que no publica Charis (Madrid y resto de España).
    Cada fila lleva su fuente; «verified:false» = dato antiguo o de agregador, pendiente de confirmar con la parroquia.
    Consultado el 24/10/2026. */
 const ADO = {realidad:'Adoración y misas', family:'ADO'};
@@ -348,6 +366,53 @@ const EXTRA = [
    schedule:'Jueves, 21:00 (hora santa con música)', lat:40.4325, lng:-3.6930, source:'https://www.padrenuestro.net/horas-santas-de-hakuna-en-todas-las-provincias-y-ciudad-de-espana/', verified:false},
   {name:'Oración de los jueves · Catedral de la Almudena', city:'Madrid', address:'Catedral de Santa María la Real de la Almudena, C/ Bailén, 10, Madrid, 28013',
    schedule:'Jueves, 19:30 (oración comunitaria; durante el curso)', lat:40.4155, lng:-3.7145, source:'https://archimadrid.org/index.php/oficina-de-informacion/noticias-madrid/jueves-en-la-catedral-el-grupo-de-hakuna-dirige-el-momento-de-oracion-comunitaria', verified:true},
+  /* Resto de España (adoración perpetua y horas santas) */
+  {name:'Adoración perpetua · Real Monasterio de Santa Isabel', city:'Barcelona', prov:'barcelona', address:'Real Monasterio de Santa Isabel (Sarrià), C/ Rocabertí, 12, Barcelona, 08017',
+   schedule:'Todos los días, 24 h', lat:41.3990, lng:2.1210, source:'https://monestir.org/adoracion-perpetua/', verified:true},
+  {name:'Adoración perpetua · Capilla M.ª Emilia Riquelme', city:'Barcelona', prov:'barcelona', address:'Capilla María Emilia Riquelme, C/ Camps Elisis, 8, Barcelona',
+   schedule:'Todos los días, 24 h', lat:41.3925, lng:2.1640, source:'https://esglesia.barcelona/es/actualitat/barcelona-abrira-una-capilla-de-adoracion-perpetua-a-10-minutos-de-la-sagrada-familia/', verified:true},
+  {name:'Adoración perpetua · Capilla de San José (Sagrada Familia)', city:'Barcelona', prov:'barcelona', address:'Capilla de San José, C/ Consell de Cent, 474 bis, Barcelona',
+   schedule:'Todos los días, 24 h', lat:41.4005, lng:2.1765, source:'https://www.eldebate.com/espana/cataluna/barcelona/20260526/barcelona-suma-nueva-capilla-adoracion-perpetua-oasis-lado-sagrada-familia_421337.html', verified:true},
+  {name:'Adoración perpetua · San Sebastián (Badalona)', city:'Badalona', prov:'barcelona', address:'Parroquia de San Sebastián, Av. Terrassa s/n, Badalona',
+   schedule:'Todos los días, 24 h', lat:41.4450, lng:2.2380, source:'http://corazoneucaristicodejesus.blogspot.com/p/capillas-de-adoracion-eucaristica.html?m=1', verified:false},
+  {name:'Adoración perpetua · Sagrado Corazón (Girona)', city:'Girona', prov:'girona', address:'Templo Expiatorio del Sagrado Corazón de Jesús, Girona',
+   schedule:'Todos los días, 24 h', lat:41.9830, lng:2.8200, source:'https://adoracioneucaristicaperpetua.es/4-nuevas-capillas-de-adoracion-perpetua-en-espana-fuenlabrada-lucena-herencia-gerona/', verified:false},
+  {name:'Adoración perpetua · San Onofre', city:'Sevilla', prov:'sevilla', address:'Capilla de San Onofre, Plaza Nueva, 3, Sevilla, 41001',
+   schedule:'Todos los días, 24 h', lat:37.3890, lng:-5.9955, source:'https://adoracionsevilla.com/donde/', verified:true},
+  {name:'Adoración perpetua · Monasterio de las Mínimas', city:'Jerez de la Frontera', prov:'cadiz', address:'Capilla del Monasterio de las Mínimas, Plaza de San Marcos, 8, Jerez de la Frontera',
+   schedule:'Todos los días, 24 h', lat:36.6850, lng:-6.1370, source:'https://adoracioneucaristicaperpetua.es/capillas-de-adoracion-perpetua-en-espana/', verified:true},
+  {name:'Adoración perpetua · Residencia San José', city:'San Fernando', prov:'cadiz', address:'Capilla de la Residencia de Ancianos San José, C/ Tomás del Valle, 5, San Fernando',
+   schedule:'Todos los días, 24 h', lat:36.4650, lng:-6.2000, source:'https://adoracioneucaristicaperpetua.es/capillas-de-adoracion-perpetua-en-espana/', verified:true},
+  {name:'Adoración perpetua · Ntra. Sra. del Carmen (Huelin)', city:'Málaga', prov:'malaga', address:'Parroquia Ntra. Sra. del Carmen (Huelin), C/ Las Navas, 15, Málaga, 29002',
+   schedule:'Todos los días, 24 h', lat:36.7110, lng:-4.4340, source:'https://diocesismalaga.es/eucaristia/2014057797/se-inaugura-la-primera-capilla-de-adoracion-perpetua-en-malaga-capital-con-mas-de-400-adoradores', verified:false},
+  {name:'Adoración perpetua · San Pascual Bailón', city:'Zaragoza', prov:'zaragoza', address:'Capilla de San Pascual Bailón (Casa del Arzobispado), Plaza de la Seo, 6, Zaragoza, 50001',
+   schedule:'Todos los días, 24 h', lat:41.6545, lng:-0.8755, source:'https://adoracioneucaristicaperpetua.es/capillas-de-adoracion-perpetua-en-espana/', verified:true},
+  {name:'Adoración perpetua · El Carmen de Indautxu', city:'Bilbao', prov:'bizkaia', address:'Parroquia El Carmen de Indautxu, C/ Simón Bolívar, 4, Bilbao, 48010',
+   schedule:'Todos los días, 24 h', lat:43.2600, lng:-2.9410, source:'https://adoracioneucaristicaperpetua.es/capillas-de-adoracion-perpetua-en-espana/', verified:true},
+  {name:'Adoración perpetua · San Martín (cerrada)', city:'Valencia', prov:'valencia', address:'Parroquia de San Martín, C/ San Vicente Mártir, 11, Valencia, 46002',
+   schedule:'Cerrada hasta nuevo aviso desde agosto de 2025', lat:39.4720, lng:-0.3770, source:'https://actualidadvalencia.com/custodia-destrozos-capilla-adoracion-perpetua-valencia/', verified:false},
+  {name:'Adoración perpetua · Capilla de San José (Torrefiel)', city:'Valencia', prov:'valencia', address:'Capilla de San José, junto a la parroquia de San Dionisio (Torrefiel), C/ Marqués de Montortal, 46, Valencia, 46019',
+   schedule:'Todos los días, 24 h', lat:39.4930, lng:-0.3720, source:'https://www.lanocion.es/comunidad-valenciana/20240127/abre-una-nueva-capilla-de-adoracion-eucaristica-pe-2003.html', verified:true},
+  {name:'Adoración perpetua · Apóstol Santiago (Murcia)', city:'Murcia', prov:'murcia', address:'Capilla del Apóstol Santiago, Plaza del Cardenal Belluga, 1, Murcia',
+   schedule:'Todos los días, 24 h', lat:37.9840, lng:-1.1285, source:'https://diocesisdecartagena.org/blog/la-adoracion-eucaristica-perpetua-celebra-el-aniversario-de-apertura-de-su-capilla-en-murcia/', verified:true},
+  {name:'Adoración perpetua · Santa María de Gracia', city:'Alicante', prov:'alicante', address:'Parroquia Santa María de Gracia, Plaza de la Montaña, 7, Alicante',
+   schedule:'Todos los días, 24 h', lat:38.3560, lng:-0.4900, source:'https://blog-aeperpetualicante.blogspot.com/', verified:false},
+  {name:'Adoración perpetua · Elche', city:'Elche', prov:'alicante', address:'Capilla de Adoración Perpetua, C/ Salvador, 19, Elche',
+   schedule:'Todos los días, 24 h', lat:38.2670, lng:-0.6990, source:'https://adoracioneucaristicaperpetua.es/reapertura-capilla-adoracion-perpetua-de-elche/', verified:true},
+  {name:'Adoración perpetua · Concepcionistas (Valladolid)', city:'Valladolid', prov:'valladolid', address:'Monasterio de la Inmaculada Concepción (Concepcionistas), C/ Concepción, 4, Valladolid',
+   schedule:'Todos los días, 24 h', lat:41.6540, lng:-4.7240, source:'https://corazoneucaristicodejesus.blogspot.com/p/capillas-de-adoracion-eucaristica.html', verified:false},
+  {name:'Adoración perpetua · Esclavas del Sagrado Corazón (Oviedo)', city:'Oviedo', prov:'asturias', address:'Esclavas del Sagrado Corazón, C/ Conde de Toreno, 2, Oviedo',
+   schedule:'Todos los días, 24 h', lat:43.3600, lng:-5.8500, source:'https://corazoneucaristicodejesus.blogspot.com/p/capillas-de-adoracion-eucaristica.html', verified:false},
+  {name:'Adoración · Capilla del Espíritu Santo (Gijón)', city:'Gijón', prov:'asturias', address:'Capilla del Espíritu Santo, C/ Magnus Blikstad, 58, Gijón',
+   schedule:'Todos los días, de 9:00 a 22:00', lat:43.5370, lng:-5.6550, source:'https://iglesiadeasturias.org/iv-aniversario-la-adoracion-eucaristica-perpetua/', verified:false},
+  {name:'Adoración perpetua · Puertollano', city:'Puertollano', prov:'ciudad-real', address:'Capilla de Adoración Perpetua, C/ Numancia, Puertollano',
+   schedule:'Todos los días, 24 h', lat:38.6870, lng:-4.1070, source:'https://www.puertollano.es/abre-sus-puertas-en-puertollano-la-segunda-capilla-en-la-provincia-de-adoracion-eucaristica-perpetua/', verified:true},
+  {name:'Hora Santa Hakuna · Santo Ángel Custodio', city:'Valencia', prov:'valencia', address:'Parroquia del Santo Ángel Custodio, C/ Salamanca, 43, Valencia',
+   schedule:'Lunes, 20:45 (hora santa con música)', lat:39.4700, lng:-0.3600, source:'https://hakuna.org/horas-santas/parroquia-del-santo-angel-custodio/', verified:false},
+  {name:'Hora Santa Hakuna · Los Remedios', city:'Sevilla', prov:'sevilla', address:'Parroquia de Nuestra Señora de los Remedios (cripta), Sevilla',
+   schedule:'Jueves, 20:00 (hora santa con música)', lat:37.3770, lng:-6.0000, source:'https://www.padrenuestro.net/horas-santas-de-hakuna-en-todas-las-provincias-y-ciudad-de-espana/', verified:false},
+  {name:'Hora Santa Hakuna · Ntra. Sra. de Gracia', city:'Granada', prov:'granada', address:'Parroquia de Nuestra Señora de Gracia, Granada',
+   schedule:'Viernes, 20:30 (hora santa con música)', lat:37.1720, lng:-3.6040, source:'https://hakuna.org/horas-santas/parroquia-de-nuestra-senora-de-gracia-granada/', verified:false},
   /* Familias */
   Object.assign({name:'Misa de familias · Santa Rita', city:'Madrid', address:'Parroquia Santa Rita (Chamberí; en la cripta), C/ Gaztambide, 75, Madrid, 28015',
    schedule:'Domingo, 11:30 (misa de familias con niños)', lat:40.4385, lng:-3.7135, source:'https://santarita.archimadrid.es/horario-nuevo/', verified:true}, FAM),
@@ -361,12 +426,12 @@ const EXTRA = [
    schedule:'Domingo, 11:00 (misa de familias; horario de invierno)', lat:40.5370, lng:-3.6400, source:'https://horariosmisas.com/madrid/alcobendas/parroquia-de-san-agustin-alcobendas/', verified:false}, FAM),
   Object.assign({name:'Misa de familias · San Pedro Apóstol', city:'Alcobendas', address:'Parroquia San Pedro Apóstol, Pl. Felipe Álvarez Gadea, 1, Alcobendas',
    schedule:'Domingo, 11:00 (misa de familias; horario de invierno)', lat:40.5405, lng:-3.6410, source:'https://horariosmisas.com/madrid/alcobendas/parroquia-de-san-pedro-apostol-alcobendas/', verified:false}, FAM)
-].map(e=>Object.assign({}, ADO, {extra:true}, e));
+].map(e=>Object.assign({}, ADO, {extra:true, prov:'madrid'}, e));
 
 /* «Zona norte»: Madrid capital al norte de ~Chamartín/Hortaleza, más Alcobendas y San Sebastián de los Reyes */
 const NORTH_TOWNS = ['alcobendas','san sebastian de los reyes'];
 const NORTH_LAT = 40.445;
-const isNorth = g => NORTH_TOWNS.includes(norm(g.city)) || (norm(g.city)==='madrid' && g.lat!=null && g.lat>=NORTH_LAT);
+const isNorth = g => g.prov==='madrid' && NORTH_TOWNS.includes(norm(g.city)) || (g.prov==='madrid' && norm(g.city)==='madrid' && g.lat!=null && g.lat>=NORTH_LAT);
 
 /* Centros aproximados de municipios, para grupos nuevos que aún no tienen coordenadas */
 const TOWNS = {
@@ -432,6 +497,78 @@ function jsonp(url, ms){
   });
 }
 
+/* ───────────────────────── España: comunidades y provincias ───────────────────────── */
+const CCAA_NAMES = {and:'Andalucía', ara:'Aragón', ast:'Principado de Asturias', bal:'Illes Balears', can:'Canarias', cnt:'Cantabria',
+  cyl:'Castilla y León', clm:'Castilla-La Mancha', cat:'Cataluña', val:'Comunitat Valenciana', ext:'Extremadura', gal:'Galicia',
+  mad:'Comunidad de Madrid', mur:'Región de Murcia', nav:'Navarra', pvs:'País Vasco', rio:'La Rioja', ceu:'Ceuta', mel:'Melilla'};
+/* id (también parte del enlace de Charis «grupos-de-oracion-<id>»), nombre, CCAA, centro aproximado, radio en km, otros nombres */
+const PROVINCES = [
+  ['almeria','Almería','and',37.15,-2.35],['cadiz','Cádiz','and',36.55,-5.75],['cordoba','Córdoba','and',37.90,-4.75],
+  ['granada','Granada','and',37.25,-3.25],['huelva','Huelva','and',37.55,-6.85],['jaen','Jaén','and',37.95,-3.45],
+  ['malaga','Málaga','and',36.80,-4.60],['sevilla','Sevilla','and',37.40,-5.75],
+  ['huesca','Huesca','ara',42.15,-0.15],['teruel','Teruel','ara',40.65,-0.85],['zaragoza','Zaragoza','ara',41.60,-1.05],
+  ['asturias','Asturias','ast',43.30,-5.95,140],
+  ['baleares','Illes Balears','bal',39.60,2.95,230,['illes balears','islas baleares','balears','mallorca']],
+  ['las-palmas','Las Palmas','can',28.55,-14.60,250,['gran canaria']],
+  ['santa-cruz-de-tenerife','Santa Cruz de Tenerife','can',28.30,-16.95,200,['tenerife']],
+  ['cantabria','Cantabria','cnt',43.20,-4.00],
+  ['avila','Ávila','cyl',40.60,-4.95],['burgos','Burgos','cyl',42.35,-3.65,150],['leon','León','cyl',42.60,-5.85,150],
+  ['palencia','Palencia','cyl',42.40,-4.55],['salamanca','Salamanca','cyl',40.80,-6.05],['segovia','Segovia','cyl',41.15,-4.05],
+  ['soria','Soria','cyl',41.65,-2.60],['valladolid','Valladolid','cyl',41.60,-4.85],['zamora','Zamora','cyl',41.70,-5.95],
+  ['albacete','Albacete','clm',38.85,-1.95],['ciudad-real','Ciudad Real','clm',38.95,-3.85,150],['cuenca','Cuenca','clm',40.00,-2.15,150],
+  ['guadalajara','Guadalajara','clm',40.80,-2.60],['toledo','Toledo','clm',39.80,-4.15,150],
+  ['barcelona','Barcelona','cat',41.70,2.00],['girona','Girona','cat',42.10,2.75,100,['gerona']],
+  ['lleida','Lleida','cat',42.00,1.05,140,['lerida']],['tarragona','Tarragona','cat',41.10,0.85],
+  ['alicante','Alicante','val',38.45,-0.60,100,['alacant']],['castellon','Castellón','val',40.20,-0.20,100,['castello']],
+  ['valencia','Valencia','val',39.35,-0.75],
+  ['badajoz','Badajoz','ext',38.75,-6.15,160],['caceres','Cáceres','ext',39.75,-6.15,160],
+  ['a-coruna','A Coruña','gal',43.15,-8.40,120,['la coruna','coruna']],['lugo','Lugo','gal',43.00,-7.55],
+  ['ourense','Ourense','gal',42.20,-7.70,100,['orense']],['pontevedra','Pontevedra','gal',42.40,-8.55,100],
+  ['madrid','Madrid','mad',40.45,-3.70,100,['comunidad de madrid']],
+  ['murcia','Murcia','mur',38.00,-1.50,120,['region de murcia']],
+  ['navarra','Navarra','nav',42.70,-1.65,130,['nafarroa']],
+  ['alava','Álava','pvs',42.85,-2.70,70,['araba']],['bizkaia','Bizkaia','pvs',43.25,-2.90,70,['vizcaya']],
+  ['gipuzkoa','Gipuzkoa','pvs',43.15,-2.15,70,['guipuzcoa']],
+  ['la-rioja','La Rioja','rio',42.30,-2.50,90,['rioja']],
+  ['ceuta','Ceuta','ceu',35.89,-5.32,15],['melilla','Melilla','mel',35.29,-2.94,15]
+].map(([id,name,ccaa,lat,lng,r,alias])=>({id, name, ccaa, c:[lat,lng], r:r||130, slug:'grupos-de-oracion-'+id,
+  alias:[norm(name), norm(id.replace(/-/g,' '))].concat(alias||[])}));
+const PROV = Object.fromEntries(PROVINCES.map(p=>[p.id,p]));
+const byNameEs = (a,b)=>a.localeCompare(b,'es');
+
+/* Ciudades principales (capitales y otras grandes) para colocar los grupos antes de afinar su dirección */
+const CITIES = {
+  'almeria':[36.834,-2.464,'almeria'],'cadiz':[36.527,-6.289,'cadiz'],'jerez de la frontera':[36.686,-6.136,'cadiz'],'jerez':[36.686,-6.136,'cadiz'],
+  'algeciras':[36.131,-5.454,'cadiz'],'san fernando':[36.464,-6.198,'cadiz'],'cordoba':[37.888,-4.779,'cordoba'],'lucena':[37.409,-4.485,'cordoba'],
+  'granada':[37.177,-3.599,'granada'],'motril':[36.745,-3.518,'granada'],'huelva':[37.261,-6.945,'huelva'],'jaen':[37.779,-3.785,'jaen'],
+  'malaga':[36.721,-4.421,'malaga'],'marbella':[36.510,-4.883,'malaga'],'sevilla':[37.389,-5.984,'sevilla'],'tomares':[37.373,-6.045,'sevilla'],
+  'san juan de aznalfarache':[37.358,-6.031,'sevilla'],'dos hermanas':[37.283,-5.921,'sevilla'],
+  'huesca':[42.136,-0.409,'huesca'],'teruel':[40.344,-1.107,'teruel'],'zaragoza':[41.649,-0.889,'zaragoza'],
+  'oviedo':[43.361,-5.849,'asturias'],'gijon':[43.532,-5.661,'asturias'],'aviles':[43.556,-5.924,'asturias'],
+  'palma':[39.570,2.650,'baleares'],'palma de mallorca':[39.570,2.650,'baleares'],'ibiza':[38.907,1.433,'baleares'],'menorca':[39.950,4.050,'baleares'],
+  'las palmas de gran canaria':[28.124,-15.430,'las-palmas'],'lanzarote':[29.000,-13.600,'las-palmas'],'fuerteventura':[28.400,-14.000,'las-palmas'],
+  'santa cruz de tenerife':[28.464,-16.251,'santa-cruz-de-tenerife'],'la laguna':[28.487,-16.315,'santa-cruz-de-tenerife'],
+  'santander':[43.462,-3.810,'cantabria'],'torrelavega':[43.350,-4.047,'cantabria'],
+  'avila':[40.656,-4.700,'avila'],'burgos':[42.344,-3.697,'burgos'],'leon':[42.599,-5.567,'leon'],'ponferrada':[42.546,-6.598,'leon'],
+  'palencia':[42.010,-4.533,'palencia'],'salamanca':[40.965,-5.664,'salamanca'],'segovia':[40.948,-4.118,'segovia'],'soria':[41.764,-2.465,'soria'],
+  'valladolid':[41.652,-4.724,'valladolid'],'zamora':[41.503,-5.745,'zamora'],
+  'albacete':[38.995,-1.856,'albacete'],'ciudad real':[38.985,-3.927,'ciudad-real'],'puertollano':[38.687,-4.107,'ciudad-real'],
+  'cuenca':[40.070,-2.137,'cuenca'],'guadalajara':[40.633,-3.167,'guadalajara'],'toledo':[39.863,-4.027,'toledo'],
+  'talavera de la reina':[39.960,-4.833,'toledo'],
+  'barcelona':[41.387,2.170,'barcelona'],'badalona':[41.450,2.247,'barcelona'],'sabadell':[41.548,2.107,'barcelona'],
+  'terrassa':[41.563,2.009,'barcelona'],'manresa':[41.729,1.826,'barcelona'],'vic':[41.930,2.255,'barcelona'],
+  'girona':[41.979,2.821,'girona'],'lleida':[41.617,0.620,'lleida'],'tarragona':[41.119,1.245,'tarragona'],'reus':[41.155,1.107,'tarragona'],
+  'alicante':[38.345,-0.481,'alicante'],'elche':[38.267,-0.698,'alicante'],'torrevieja':[37.978,-0.683,'alicante'],
+  'castellon de la plana':[39.986,-0.051,'castellon'],'valencia':[39.470,-0.376,'valencia'],
+  'badajoz':[38.879,-6.970,'badajoz'],'merida':[38.916,-6.344,'badajoz'],'caceres':[39.475,-6.372,'caceres'],
+  'a coruna':[43.362,-8.411,'a-coruna'],'santiago de compostela':[42.878,-8.544,'a-coruna'],'ferrol':[43.484,-8.233,'a-coruna'],
+  'lugo':[43.012,-7.556,'lugo'],'ourense':[42.336,-7.864,'ourense'],'pontevedra':[42.431,-8.644,'pontevedra'],'vigo':[42.240,-8.720,'pontevedra'],
+  'murcia':[37.992,-1.131,'murcia'],'cartagena':[37.606,-0.986,'murcia'],'lorca':[37.677,-1.700,'murcia'],
+  'pamplona':[42.812,-1.645,'navarra'],'vitoria':[42.847,-2.672,'alava'],'vitoria gasteiz':[42.847,-2.672,'alava'],
+  'bilbao':[43.263,-2.935,'bizkaia'],'donostia':[43.318,-1.981,'gipuzkoa'],'san sebastian':[43.318,-1.981,'gipuzkoa'],
+  'logrono':[42.462,-2.445,'la-rioja'],'ceuta':[35.889,-5.321,'ceuta'],'melilla':[35.292,-2.938,'melilla']
+};
+
 /* ───────────────────────── Horarios ───────────────────────── */
 function parseSchedule(text){
   const t = norm(text);
@@ -484,26 +621,30 @@ const SEEDS = new Map(SNAPSHOT.groups.map(g=>[addrKey(g[2],g[1]), [g[5],g[6]]]))
 EXTRA.forEach(e=>{ const k = addrKey(e.address,e.city); if(!SEEDS.has(k)) SEEDS.set(k, [e.lat,e.lng]); });
 
 function makeGroup(o){
+  const prov = PROV[o.prov] || PROV.madrid;
   const g = {
-    id:idOf(o.name,o.city), name:o.name, city:o.city, address:o.address, schedule:o.schedule,
+    id:idOf(o.name,o.city), name:o.name, city:o.city, address:o.address, schedule:o.schedule, prov:prov.id,
     realidad:o.realidad, family:o.family||familyOf(o.realidad), sched:parseSchedule(o.schedule),
     extra:!!o.extra, source:o.source||null, verified:o.verified!==false
   };
   const seed = SEEDS.get(addrKey(g.address,g.city));
-  const town = TOWNS[norm(g.city)];
+  const cn = norm(g.city);
+  const town = prov.id==='madrid' ? TOWNS[cn] : null;
+  const city = !town && CITIES[cn] && CITIES[cn][2]===prov.id ? CITIES[cn] : null;
   if(seed){ g.anchor = seed; g.anchorKm = 8; }
-  else if(town){ g.anchor = town; g.anchorKm = norm(g.city)==='madrid' ? 16 : 10; }
-  else { g.anchor = TOWNS.madrid; g.anchorKm = 70; }
+  else if(town){ g.anchor = town; g.anchorKm = cn==='madrid' ? 16 : 10; }
+  else if(city){ g.anchor = [city[0],city[1]]; g.anchorKm = 25; }
+  else { g.anchor = prov.c; g.anchorKm = prov.r; }
   const cached = store.get('geo:v1:'+addrKey(g.address,g.city), null);
   if(cached && cached.lat){ g.lat=cached.lat; g.lng=cached.lng; g.prec=cached.prec; }
   else if(seed){ g.lat=seed[0]; g.lng=seed[1]; g.prec='aprox'; }
-  else if(town){ g.lat=town[0]; g.lng=town[1]; g.prec='municipio'; }
-  else { g.lat=null; g.lng=null; g.prec='none'; }
+  else if(town || city){ const t = town || city; g.lat=t[0]; g.lng=t[1]; g.prec='municipio'; }
+  else { g.lat=prov.c[0]; g.lng=prov.c[1]; g.prec='provincia'; }
   g.geoFailed = !!(cached && cached.none && Date.now()-cached.t < 7*86400000);
   return g;
 }
 
-function parseCharisHtml(html){
+function parseCharisHtml(html, defCity){
   const doc = new DOMParser().parseFromString(html,'text/html');
   const table = doc.querySelector('table');
   if(!table) throw new Error('sin tabla');
@@ -519,7 +660,7 @@ function parseCharisHtml(html){
     if(i<=hIdx) return;
     const c = cellsOf(tr);
     if(!c[ci.name] || norm(c[ci.name])==='nombre') return;
-    groups.push({name:c[ci.name], city:c[ci.city]||'Madrid', address:c[ci.addr]||'', schedule:c[ci.when]||'', realidad:c[ci.real]||''});
+    groups.push({name:c[ci.name], city:c[ci.city]||defCity||'Madrid', address:c[ci.addr]||'', schedule:c[ci.when]||'', realidad:c[ci.real]||''});
   });
   const contacts = [];
   doc.querySelectorAll('li').forEach(li=>{
@@ -533,22 +674,28 @@ function parseCharisHtml(html){
   return {groups, contacts, modified: mod ? mod.getAttribute('content') : null};
 }
 
-async function loadLive(){
+async function loadLive(slug, minRows, defCity){
   let lastErr;
-  for(const src of SOURCES){
+  for(const src of sourcesFor(slug)){
     try{
       let parsed;
       if(src.kind==='jsonp' || src.kind==='json'){
         const d = src.kind==='jsonp' ? await jsonp(src.url(), 9000) : await (await fetchTimeout(src.url(), 9000)).json();
         if(!d || d.error || !d.content) throw new Error((d&&d.error)||'vacío');
-        parsed = parseCharisHtml(d.content);
+        parsed = parseCharisHtml(d.content, defCity);
         parsed.modified = d.modified || parsed.modified;
+      } else if(src.kind==='wp2'){
+        const d = await (await fetchTimeout(src.url(), 9000)).json();
+        const p = Array.isArray(d) && d[0];
+        if(!p || !p.content || !p.content.rendered) throw new Error('vacío');
+        parsed = parseCharisHtml(p.content.rendered, defCity);
+        parsed.modified = p.modified || parsed.modified;
       } else {
         const r = await fetchTimeout(src.url(), 12000);
         if(!r.ok) throw new Error('HTTP '+r.status);
-        parsed = parseCharisHtml(await r.text());
+        parsed = parseCharisHtml(await r.text(), defCity);
       }
-      if(parsed.groups.length < 5) throw new Error('tabla incompleta');
+      if(parsed.groups.length < (minRows||1)) throw new Error('tabla incompleta');
       parsed.via = src.label;
       return parsed;
     }catch(e){ lastErr = e; }
@@ -558,13 +705,13 @@ async function loadLive(){
 
 /* ───────────────────────── Estado ───────────────────────── */
 const state = {
-  groups:[], contacts:[], mode:'loading', modified:null, fetchedAt:null,
+  groups:[], view:{ccaa:'all', prov:null},
   filter:{q:'', day:'all', fam:new Set(ALL_FAMS), city:'all'},
   sort:'next', you:null, selected:null, gen:0, news:{added:new Set(), changed:new Set(), removed:[]}
 };
 
 /* ───────────────────────── Mapa ───────────────────────── */
-const map = L.map('map',{zoomControl:true, attributionControl:true}).setView([40.44,-3.72],10);
+const map = L.map('map',{zoomControl:true, attributionControl:true}).setView([40.2,-3.7],6);
 const darkQ = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : {matches:false, addEventListener(){}} ;
 /* Fondos de mapa, todos basados en OpenStreetMap y sin clave */
 const OSM_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">colaboradores de OpenStreetMap</a>';
@@ -594,8 +741,10 @@ function setTiles(){
   restyleMarkers();
 }
 try{ darkQ.addEventListener('change', setTiles); }catch(e){}
-const layer = L.layerGroup().addTo(map);
+const layer = L.layerGroup();          /* marcadores de cada grupo (vista de provincia) */
+const bubbleLayer = L.layerGroup();    /* burbujas por provincia (vista de España o de una comunidad) */
 const markers = new Map();
+let activeTab = 'groups';
 let youMarker = null;
 
 function markerStyle(g, selected){
@@ -611,9 +760,10 @@ function markerStyle(g, selected){
 }
 function restyleMarkers(){ markers.forEach((m,id)=>{ const g = state.groups.find(x=>x.id===id); if(g) m.setStyle(markerStyle(g, state.selected===id)); }); }
 
+const contactsOf = pid => (provData[pid] && provData[pid].contacts && provData[pid].contacts.length) ? provData[pid].contacts : SNAPSHOT.contacts;
 function contactFor(g){
-  const n = norm(g.realidad);
-  return state.contacts.find(c=>norm(c[0])===n) || state.contacts.find(c=>n && (norm(c[0]).startsWith(n)||n.startsWith(norm(c[0]))));
+  const n = norm(g.realidad), cs = contactsOf(g.prov);
+  return cs.find(c=>norm(c[0])===n) || cs.find(c=>n && (norm(c[0]).startsWith(n)||n.startsWith(norm(c[0]))));
 }
 function mapsUrl(g){ return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(g.address.replace(/\s*,\s*$/,'')+(norm(g.address).includes(norm(g.city))?'':', '+g.city)); }
 function linksHtml(c){
@@ -630,7 +780,7 @@ function popupHtml(g){
     <h3>${esc(g.name)}</h3>
     ${nl.text?`<p class="pnext ${nl.today?'today':''}">${esc(nl.text)}</p>`:''}
     <p>${esc(g.schedule)}</p>
-    <p class="muted">${esc(g.address)}${norm(g.address).includes(norm(g.city))?'':' · '+esc(g.city)}</p>
+    <p class="muted">${esc(g.address)}${norm(g.address).includes(norm(g.city))?'':' · '+esc(g.city)}${norm(g.city)===norm(PROV[g.prov].name)?'':' ('+esc(PROV[g.prov].name)+')'}</p>
     ${g.extra
       ? `<p><span class="muted">Tipo:</span> ${esc(g.realidad)}${safeHref(g.source)?`<br><span class="muted">Fuente:</span> <a href="${esc(g.source)}" target="_blank" rel="noopener">${esc(g.source.replace(/^https?:\/\/(www\.)?/,'').split('/')[0])}</a>`:''}${g.verified?'':'<br><strong>Por confirmar:</strong> dato antiguo, consulte con la parroquia.'}</p>`
       : `<p><span class="muted">Realidad:</span> ${esc(g.realidad)}${c?`<br><span class="muted">Contacto:</span> ${linksHtml(c)}`:''}</p>`}
@@ -661,6 +811,7 @@ function visibleGroups(){
   const f = state.filter, q = norm(f.q), now = new Date();
   const day = f.day==='today' ? now.getDay() : f.day;
   let out = state.groups.filter(g=>{
+    if(!inScope(g)) return false;
     if(!f.fam.has(g.family)) return false;
     if(f.city==='norte' ? !isNorth(g) : (f.city!=='all' && norm(g.city)!==f.city)) return false;
     if(day!=='all' && !g.sched.days.includes(+day)) return false;
@@ -683,7 +834,8 @@ function render(){
   });
   const vis = visibleGroups();
   const visIds = new Set(vis.map(g=>g.id));
-  markers.forEach((m,id)=>{ const on = visIds.has(id); if(on && !layer.hasLayer(m)) layer.addLayer(m); if(!on && layer.hasLayer(m)) layer.removeLayer(m); });
+  const detail = !!state.view.prov;
+  markers.forEach((m,id)=>{ const on = detail && visIds.has(id); if(on && !layer.hasLayer(m)) layer.addLayer(m); if(!on && layer.hasLayer(m)) layer.removeLayer(m); });
 
   const list = $('#list');
   if(!vis.length){
@@ -698,25 +850,51 @@ function render(){
         <div>
           <h3>${esc(g.name)} ${badge}</h3>
           <div class="when">${nl.text?`<span class="next ${nl.today?'today':''}">${esc(nl.text)}</span> · `:''}<span>${esc(g.schedule)}</span></div>
-          <div class="where">${esc(g.address.replace(/\s*,\s*$/,''))}${norm(g.address).includes(norm(g.city))?'':' · '+esc(g.city)}</div>
+          <div class="where">${esc(g.address.replace(/\s*,\s*$/,''))}${norm(g.address).includes(norm(g.city))?'':' · '+esc(g.city)}${detail||norm(g.city)===norm(PROV[g.prov].name)?'':' · '+esc(PROV[g.prov].name)}</div>
           <div class="meta"><span class="tag">${esc(g.realidad)}</span>${g.verified?'':'<span class="tag tbc">Por confirmar</span>'}${dist}</div>
         </div>
       </li>`;
     }).join('');
   }
-  const total = state.groups.length;
-  $('#count').textContent = vis.length===total ? `${total} grupos` : `${vis.length} de ${total} grupos`;
+  const total = state.groups.filter(inScope).length;
+  $('#count').textContent = (vis.length===total ? `${total} lugares` : `${vis.length} de ${total} lugares`)+' · '+scopeName();
+  if(!detail) renderBubbles(vis);
+  renderNews();
 
-  if(fitNext){
-    const pts = vis.filter(g=>g.lat!=null).map(g=>[g.lat,g.lng]);
-    if(state.you) pts.push(state.you);
-    if(pts.length>1) map.fitBounds(pts,{padding:[30,30], maxZoom:14});
-    else if(pts.length===1) map.setView(pts[0],14);
+  if(fitNext && activeTab==='groups'){
+    const pts = detail ? vis.filter(g=>g.lat!=null).map(g=>[g.lat,g.lng]) : bubblePoints();
+    if(state.you && detail) pts.push(state.you);
+    if(pts.length>1) map.fitBounds(pts,{padding:[30,30], maxZoom:detail?14:8});
+    else if(pts.length===1) map.setView(pts[0], detail?14:8);
+    else if(!detail){ const sp = scopeProvs().map(p=>p.c); if(sp.length) map.fitBounds(sp,{padding:[30,30], maxZoom:8}); }
     fitNext = false;
   }
 }
+/* Una burbuja por provincia con el número de lugares visibles; al pulsarla se abre la provincia */
+function renderBubbles(vis){
+  bubbleLayer.clearLayers();
+  const counts = {};
+  vis.forEach(g=>{ counts[g.prov] = (counts[g.prov]||0)+1; });
+  scopeProvs().forEach(p=>{
+    const n = counts[p.id]||0, waiting = !!progress && !provData[p.id];
+    if(!n && !waiting) return;
+    const s = n ? Math.round(26 + Math.min(24, Math.sqrt(n)*3)) : 20;
+    const m = L.marker(p.c, {icon:L.divIcon({className:'', html:`<div class="bub${n?'':' wait'}" style="width:${s}px;height:${s}px">${n||'…'}</div>`, iconSize:[s,s]}), title:p.name, keyboard:true});
+    m.bindTooltip(n ? `${p.name}: ${n} lugar${n>1?'es':''}` : `${p.name}: cargando…`, {direction:'top', offset:[0,-s/2]});
+    m.on('click', ()=>setView(p.ccaa, p.id));
+    bubbleLayer.addLayer(m);
+  });
+}
+function bubblePoints(){ const pts = []; bubbleLayer.eachLayer(m=>pts.push(m.getLatLng())); return pts.map(l=>[l.lat,l.lng]); }
+function updateLayers(){
+  [layer, bubbleLayer, evLayer].forEach(l=>{ if(map.hasLayer(l)) map.removeLayer(l); });
+  if(activeTab==='events') map.addLayer(evLayer);
+  else map.addLayer(state.view.prov ? layer : bubbleLayer);
+}
 
 function select(id, fromList){
+  const sg = state.groups.find(x=>x.id===id);
+  if(fromList && sg && !state.view.prov) setView(PROV[sg.prov].ccaa, sg.prov);
   state.selected = id;
   restyleMarkers();
   document.querySelectorAll('.item.sel').forEach(el=>el.classList.remove('sel'));
@@ -732,49 +910,79 @@ function select(id, fromList){
 }
 
 function buildControls(){
-  $('#dayChips').innerHTML = DAY_CHIPS.map(([v,l])=>`<button class="chip" type="button" data-day="${v}" aria-pressed="${String(state.filter.day)===String(v)}">${l}</button>`).join('');
+  const v = state.view, scoped = state.groups.filter(inScope);
+  const countBy = {}; state.groups.forEach(g=>{ countBy[g.prov] = (countBy[g.prov]||0)+1; });
+  const ccaaCount = k => PROVINCES.filter(p=>p.ccaa===k).reduce((a,p)=>a+(countBy[p.id]||0), 0);
+  $('#ccaa').innerHTML = `<option value="all">Toda España (${state.groups.length})</option>` + Object.entries(CCAA_NAMES).sort((a,b)=>byNameEs(a[1],b[1]))
+    .map(([k,n])=>`<option value="${k}">${esc(n)} (${ccaaCount(k)})</option>`).join('');
+  $('#ccaa').value = v.ccaa;
+  const provs = PROVINCES.filter(p=>v.ccaa==='all' || p.ccaa===v.ccaa).sort((a,b)=>byNameEs(a.name,b.name));
+  $('#prov').innerHTML = `<option value="">${v.ccaa==='all' ? 'Todas las provincias' : 'Todas las provincias de '+esc(CCAA_NAMES[v.ccaa])}</option>`
+    + provs.map(p=>`<option value="${p.id}">${esc(p.name)} (${countBy[p.id]||0})</option>`).join('');
+  $('#prov').value = v.prov || '';
+  $('#dayChips').innerHTML = DAY_CHIPS.map(([d,l])=>`<button class="chip" type="button" data-day="${d}" aria-pressed="${String(state.filter.day)===String(d)}">${l}</button>`).join('');
   $('#realChips').innerHTML = Object.entries(FAMILIES).map(([k,f])=>{
-    const n = state.groups.filter(g=>g.family===k).length;
+    const n = scoped.filter(g=>g.family===k).length;
     return n ? `<button class="chip" type="button" data-fam="${k}" aria-pressed="${state.filter.fam.has(k)}" style="--c:var(${f.color})"><span class="sw"></span>${f.label} <span style="opacity:.6">${n}</span></button>` : '';
   }).join('');
-  const cities = [...new Set(state.groups.map(g=>g.city))].sort((a,b)=>norm(a)==='madrid'?-1:norm(b)==='madrid'?1:a.localeCompare(b,'es'));
-  const cur = state.filter.city;
-  const nNorth = state.groups.filter(isNorth).length;
-  $('#city').innerHTML = '<option value="all">Toda la Comunidad</option>'
-    + `<option value="norte">Zona norte: Madrid norte, Alcobendas, S. S. de los Reyes (${nNorth})</option>` + cities.map(c=>{
-    const n = state.groups.filter(g=>g.city===c).length;
-    return `<option value="${esc(norm(c))}">${norm(c)==='madrid'?'Madrid capital':esc(c)} (${n})</option>`;
-  }).join('');
-  $('#city').value = [...$('#city').options].some(o=>o.value===cur) ? cur : 'all';
-  state.filter.city = $('#city').value;
-  $('#contacts').innerHTML = state.contacts.map(c=>`<dt>${esc(c[0])}</dt><dd>${linksHtml(c)}</dd>`).join('') || '<dd>Sin datos de contacto.</dd>';
+  /* Municipios: solo dentro de una provincia */
+  $('#city').hidden = !v.prov;
+  if(v.prov){
+    const capital = norm(PROV[v.prov].name);
+    const cities = [...new Set(scoped.map(g=>g.city))].sort((a,b)=>norm(a)===capital?-1:norm(b)===capital?1:byNameEs(a,b));
+    const cur = state.filter.city;
+    const nNorth = v.prov==='madrid' ? scoped.filter(isNorth).length : 0;
+    $('#city').innerHTML = `<option value="all">${v.prov==='madrid'?'Toda la Comunidad':'Toda la provincia'}</option>`
+      + (v.prov==='madrid' ? `<option value="norte">Zona norte: Madrid norte, Alcobendas, S. S. de los Reyes (${nNorth})</option>` : '')
+      + cities.map(c=>{
+        const n = scoped.filter(g=>g.city===c).length;
+        return `<option value="${esc(norm(c))}">${v.prov==='madrid' && norm(c)==='madrid'?'Madrid capital':esc(c)} (${n})</option>`;
+      }).join('');
+    $('#city').value = [...$('#city').options].some(o=>o.value===cur) ? cur : 'all';
+  }
+  state.filter.city = v.prov ? $('#city').value : 'all';
+  /* Contactos de las provincias del ámbito, sin repetir */
+  const seen = new Set(), cs = [];
+  scopeProvs().forEach(p=>contactsOf(p.id).forEach(c=>{ const k = norm(c[0])+'|'+norm(c[1]); if(!seen.has(k)){ seen.add(k); cs.push(c); } }));
+  $('#contacts').innerHTML = cs.map(c=>`<dt>${esc(c[0])}</dt><dd>${linksHtml(c)}</dd>`).join('') || '<dd>Sin datos de contacto.</dd>';
 }
 
 /* ───────────────────────── Novedades ───────────────────────── */
-function computeNews(prev){
-  const cur = new Map(state.groups.filter(g=>!g.extra).map(g=>[g.id,g]));
-  const added = new Set(), changed = new Set(), removed = [];
-  if(prev){
-    const pm = new Map(prev.map(p=>[p.id,p]));
-    cur.forEach((g,id)=>{
-      const p = pm.get(id);
-      if(!p) added.add(id);
-      else if(norm(p.a)!==norm(g.address) || norm(p.s)!==norm(g.schedule)) changed.add(id);
-    });
-    prev.forEach(p=>{ if(!cur.has(p.id)) removed.push(p.n); });
-  }
-  state.news = {added, changed, removed};
-  const box = $('#news');
+const newsBy = {};
+function newsFor(id, rows, prev){
+  if(!prev){ delete newsBy[id]; return; }
+  const cur = new Map(rows.map(r=>[idOf(r.name,r.city), r])), pm = new Map(prev.map(p=>[p.id,p]));
+  const n = {added:[], changed:[], removed:[]};
+  cur.forEach((r,k)=>{ const p = pm.get(k); if(!p) n.added.push(k); else if(norm(p.a)!==norm(r.address) || norm(p.s)!==norm(r.schedule)) n.changed.push(k); });
+  prev.forEach(p=>{ if(!cur.has(p.id)) n.removed.push(p.n); });
+  newsBy[id] = n;
+}
+function collectNews(){
+  const added = new Set(), changed = new Set();
+  Object.values(newsBy).forEach(n=>{ n.added.forEach(x=>added.add(x)); n.changed.forEach(x=>changed.add(x)); });
+  state.news = {added, changed};
+}
+function renderNews(){
+  const byId = new Map(state.groups.filter(g=>!g.extra && inScope(g)).map(g=>[g.id,g]));
+  const added = [...state.news.added].filter(id=>byId.has(id)), changed = [...state.news.changed].filter(id=>byId.has(id));
+  const removed = Object.entries(newsBy).filter(([id])=>inScopeProv(id)).flatMap(([,n])=>n.removed);
   const parts = [];
-  if(added.size) parts.push(`<strong>${added.size} nuevo${added.size>1?'s':''}:</strong> ${esc([...added].map(id=>cur.get(id).name).join(', '))}`);
-  if(changed.size) parts.push(`<strong>${changed.size} con cambios</strong> de horario o dirección: ${esc([...changed].map(id=>cur.get(id).name).join(', '))}`);
+  if(added.length) parts.push(`<strong>${added.length} nuevo${added.length>1?'s':''}:</strong> ${esc(added.map(id=>byId.get(id).name).join(', '))}`);
+  if(changed.length) parts.push(`<strong>${changed.length} con cambios</strong> de horario o dirección: ${esc(changed.map(id=>byId.get(id).name).join(', '))}`);
   if(removed.length) parts.push(`<strong>Ya no figura${removed.length>1?'n':''}:</strong> ${esc(removed.join(', '))}`);
+  const box = $('#news');
   box.hidden = !parts.length;
   box.innerHTML = parts.length ? 'Desde tu última consulta · ' + parts.join(' · ') : '';
 }
-const signature = () => state.groups.filter(g=>!g.extra).map(g=>({id:g.id, n:g.name, a:g.address, s:g.schedule}));
 
 /* ───────────────────────── Geocodificación ───────────────────────── */
+const CP_RE = /\b(?:0[1-9]|[1-4]\d|5[0-2])\d{3}\b/, CP_ONLY = /^(?:0[1-9]|[1-4]\d|5[0-2])\d{3}$/;
+/* Caja de búsqueda del geocodificador: [oeste, norte, este, sur] */
+function boxOf(pid){
+  if(pid==='madrid') return [-4.65,41.20,-2.95,39.85];
+  const p = PROV[pid] || PROV.madrid, dl = p.r/111, dg = p.r/85;
+  return [p.c[1]-dg, p.c[0]+dl, p.c[1]+dg, p.c[0]-dl].map(x=>+x.toFixed(3));
+}
 const STREET_RE = /^(c\/|c\.\s|calle\s|av\.?\s|avda\.?\s|avenida\s|plaza\s|pl\.\s|pza\.?\s|glorieta\s|camino\s|pasaje\s|paseo\s|carretera\s|ctra\.?\s|ronda\s|traves[ií]a\s)/i;
 function expand(s){
   return s.replace(/^C\/\s*/i,'Calle ').replace(/^C\.\s+/i,'Calle ').replace(/^Avda\.?\s+/i,'Avenida ').replace(/^Av\.?\s+/i,'Avenida ')
@@ -787,34 +995,35 @@ function expand(s){
 function buildQueries(g){
   const a = g.address.replace(/\([^)]*\)/g,' ').replace(/\bduplicado\b/gi,' ').replace(/\bn[ºo°]\s*/gi,' ').replace(/\bs\/n\b/gi,' ').replace(/\s+/g,' ');
   const segs = a.split(',').map(s=>s.trim().replace(/\.$/,'')).filter(Boolean);
-  const cp = (a.match(/\b28\d{3}\b/)||[])[0] || '';
+  const cp = (a.match(CP_RE)||[])[0] || '';
   const place = norm(g.city)==='las matas' ? 'Las Matas, Las Rozas de Madrid' : g.city;
+  const region = g.prov==='madrid' ? 'Comunidad de Madrid' : PROV[g.prov].name;
   let si = segs.findIndex(s=>STREET_RE.test(s));
   if(si<0 && segs.length>=2 && !/^\d/.test(segs[1]) && norm(segs[1])!==norm(g.city)) si = 1;
   const qs = [];
   if(si>=0){
     let street = segs[si].split(/\s+con\s+/i)[0];
     const nx = segs[si+1];
-    if(nx && /^\d+/.test(nx) && !/^28\d{3}$/.test(nx)) street += ' ' + nx.match(/^\d+/)[0];
+    if(nx && /^\d+/.test(nx) && !CP_ONLY.test(nx)) street += ' ' + nx.match(/^\d+/)[0];
     street = expand(street).replace(/(\d+)\s*(?:bis|[a-z])\b/i,'$1').replace(/(\d+)-\d+/,'$1');
-    qs.push({q:`${street}, ${cp?cp+' ':''}${place}, Comunidad de Madrid, España`, prec:'calle'});
+    qs.push({q:`${street}, ${cp?cp+' ':''}${place}, ${region}, España`, prec:'calle'});
     if(cp) qs.push({q:`${street}, ${place}, España`, prec:'calle'});
   }
   if(si!==0 && segs[0]) qs.push({q:`${expand(segs[0])}, ${place}, España`, prec:'lugar'});
   return qs;
 }
 let lastNom = 0, nomDown = 0;
-async function nominatim(q){
+async function nominatim(q, box){
   const wait = lastNom + 1100 - Date.now(); if(wait>0) await sleep(wait);
   lastNom = Date.now();
-  const u = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=es&accept-language=es&bounded=1&viewbox=-4.65,41.20,-2.95,39.85&q='+encodeURIComponent(q);
+  const u = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=es&accept-language=es&bounded=1&viewbox='+box.join(',')+'&q='+encodeURIComponent(q);
   const r = await fetchTimeout(u, 9000, {cache:'default'});
   if(!r.ok) throw new Error('HTTP '+r.status);
   const j = await r.json();
   return j && j[0] ? [+j[0].lat, +j[0].lon] : null;
 }
-async function photon(q){
-  const u = 'https://photon.komoot.io/api/?limit=1&lang=es&bbox=-4.65,39.85,-2.95,41.20&q='+encodeURIComponent(q);
+async function photon(q, box){
+  const u = 'https://photon.komoot.io/api/?limit=1&lang=es&bbox='+[box[0],box[3],box[2],box[1]].join(',')+'&q='+encodeURIComponent(q);
   const r = await fetchTimeout(u, 9000, {cache:'default'});
   if(!r.ok) throw new Error('HTTP '+r.status);
   const j = await r.json();
@@ -823,10 +1032,11 @@ async function photon(q){
 }
 async function geocode(g){
   let netOk = false;
+  const box = boxOf(g.prov);
   for(const {q,prec} of buildQueries(g)){
     for(const fn of (nomDown>=3 ? [photon] : [nominatim, photon])){
       try{
-        const p = await fn(q);
+        const p = await fn(q, box);
         netOk = true; if(fn===nominatim) nomDown = 0;
         if(p && km(p, g.anchor) <= g.anchorKm) return {lat:p[0], lng:p[1], prec};
         if(p) continue;
@@ -837,15 +1047,19 @@ async function geocode(g){
   return netOk ? {none:true} : null;
 }
 async function refineLocations(){
-  const gen = state.gen;
-  const todo = state.groups.filter(g=>g.prec!=='calle' && g.prec!=='lugar' && !g.geoFailed);
+  const my = ++geoGen, pid = state.view.prov;
+  if(!pid){ $('#geoStatus').textContent = ''; return; }
+  const todo = state.groups.filter(g=>g.prov===pid && g.prec!=='calle' && g.prec!=='lugar' && !g.geoFailed).map(g=>g.id);
   if(!todo.length){ $('#geoStatus').textContent = ''; return; }
   let done = 0, offline = 0;
-  for(const g of todo){
-    if(gen!==state.gen) return;
+  for(const id of todo){
+    if(my!==geoGen) return;
+    const g0 = state.groups.find(x=>x.id===id); if(!g0){ done++; continue; }
     $('#geoStatus').textContent = `Afinando ubicaciones… ${done}/${todo.length}`;
-    const r = await geocode(g);
+    const r = await geocode(g0);
     done++;
+    if(my!==geoGen) return;
+    const g = state.groups.find(x=>x.id===id) || g0;   /* el listado puede haberse reconstruido mientras tanto */
     const key = 'geo:v1:'+addrKey(g.address,g.city);
     if(r && !r.none){
       g.lat=r.lat; g.lng=r.lng; g.prec=r.prec;
@@ -853,13 +1067,12 @@ async function refineLocations(){
       syncMarkers(); render();
     } else if(r && r.none){
       g.geoFailed = true; store.set(key, {none:true, t:Date.now()});
-      if(g.lat==null){ /* sin coordenadas de ningún tipo: queda solo en la lista */ }
     } else if(++offline>=4){
       $('#geoStatus').textContent = 'Ubicaciones aproximadas (sin conexión al geocodificador)';
       return;
     }
   }
-  if(gen===state.gen) $('#geoStatus').textContent = '';
+  if(my===geoGen) $('#geoStatus').textContent = '';
 }
 
 /* ───────────────────────── Agenda de eventos ───────────────────────── */
@@ -896,7 +1109,6 @@ const EVENT_LINKS = [
   ['https://deretiro.es/parroquias/rcce-renovacion-carismatica-catolica-espana/','DeRetiro · agenda de la RCCE']
 ];
 const EV_ORGS = {RCCE:{label:'RCCE', color:'--c-rcce'}, RCCeE:{label:'RCCeE', color:'--c-rccee'}, CHARIS:{label:'Charis', color:'--c-com'}, OTRO:{label:'Otros', color:'--c-ado'}};
-const EV_SCOPES = [['all','Toda España'],['mad','Comunidad de Madrid'],['rest','Resto']];
 const PROXIES = [
   u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
   u=>'https://corsproxy.io/?url='+encodeURIComponent(u),
@@ -907,8 +1119,17 @@ const MONTHS = {enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,julio:6,agosto:
 const MONTH_RE = Object.keys(MONTHS).sort((a,b)=>b.length-a.length).join('|');
 const TXT_DATE = new RegExp('((?:\\d{1,2}\\s*(?:,|y|al|a|-|–)\\s*)*\\d{1,2})\\s+(?:de\\s+)?('+MONTH_RE+')\\.?\\b(?:\\s*(?:de|del)?\\s*(\\d{4}))?','g');
 const NUM_DATE = /\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b(?:\s*(?:-|–|al|a)\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\b)?/;
-const EV_TOWNS = Object.assign({'comunidad de madrid':TOWNS.madrid, 'pozuelo':TOWNS['pozuelo de alarcon'], 'rivas':TOWNS['rivas vaciamadrid'], 'sanse':TOWNS['san sebastian de los reyes']}, TOWNS);
-const TOWN_RE = new RegExp('\\b('+Object.keys(EV_TOWNS).sort((a,b)=>b.length-a.length).map(k=>k.replace(/[.*+?^${}()|[\]\\-]/g,'\\$&')).join('|')+')\\b');
+/* Lugares reconocibles en el texto de un anuncio: municipios de Madrid, ciudades principales y nombres de provincia */
+const PLACE_INDEX = (()=>{
+  const o = {};
+  Object.entries(TOWNS).forEach(([k,c])=>{ o[k] = {prov:'madrid', c}; });
+  Object.assign(o, {'comunidad de madrid':{prov:'madrid', c:TOWNS.madrid}, 'pozuelo':{prov:'madrid', c:TOWNS['pozuelo de alarcon']},
+    'rivas':{prov:'madrid', c:TOWNS['rivas vaciamadrid']}, 'sanse':{prov:'madrid', c:TOWNS['san sebastian de los reyes']}});
+  Object.entries(CITIES).forEach(([k,v])=>{ if(!o[k]) o[k] = {prov:v[2], c:[v[0],v[1]]}; });
+  PROVINCES.forEach(p=>p.alias.forEach(a=>{ if(!o[a]) o[a] = {prov:p.id, c:p.c}; }));
+  return o;
+})();
+const PLACE_RE = new RegExp('\\b('+Object.keys(PLACE_INDEX).sort((a,b)=>b.length-a.length).map(k=>k.replace(/[.*+?^${}()|[\]\\-]/g,'\\$&')).join('|')+')\\b');
 
 const htmlText = s => { try{ return new DOMParser().parseFromString(String(s||''),'text/html').body.textContent.replace(/\s+/g,' ').trim(); }catch(e){ return ''; } };
 const dayStart = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -946,7 +1167,7 @@ function parseEventDates(text, pub){
   }
   return null;
 }
-function madridTown(text){ const m = norm(text).match(TOWN_RE); return m ? m[1] : null; }
+function placeOf(text){ const m = norm(text).match(PLACE_RE); return m ? Object.assign({key:m[1]}, PLACE_INDEX[m[1]]) : null; }
 
 async function getJson(u){ const r = await fetchTimeout(u, 9000, {cache:'default'}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
 async function postsViaRest(src){
@@ -985,14 +1206,13 @@ const ev = {mode:'loading', items:[], ok:[], failed:[], storedAt:null, scope:'al
 function postToEvent(p, src){
   const d = parseEventDates(p.title, p.date) || parseEventDates(p.text.slice(0,1500), p.date);
   if(!d && src.datedOnly) return null;
-  const town = madridTown(p.title+' · '+p.text.slice(0,800));
+  const pl = placeOf(p.title) || placeOf(p.text.slice(0,800));
   return {title:p.title, start:d?d.start:null, end:d?d.end:null, pub:p.date?new Date(p.date):null, org:src.org,
-    place: town ? titleCase(town==='comunidad de madrid' ? 'Comunidad de Madrid' : town) : '', town, link:safeHref(p.link)?p.link:null,
+    place: pl ? (PROV[pl.prov] && norm(PROV[pl.prov].name)===pl.key ? PROV[pl.prov].name : titleCase(pl.key)) : '', pl, link:safeHref(p.link)?p.link:null,
     site:src.site, verified:true, live:true};
 }
 function snapshotEvent(e){
-  const town = madridTown(e.place);
-  return Object.assign({}, e, {start:isoDay(e.start), end:isoDay(e.end||e.start), town, site:(e.link||'').replace(/^https?:\/\/(www\.)?/,'').split('/')[0]});
+  return Object.assign({}, e, {start:isoDay(e.start), end:isoDay(e.end||e.start), pl:placeOf(e.place), site:(e.link||'').replace(/^https?:\/\/(www\.)?/,'').split('/')[0]});
 }
 function buildEvents(postsBySource){
   const out = [], seen = new Set();
@@ -1005,9 +1225,8 @@ function buildEvents(postsBySource){
     if(e.start ? (e.end||e.start) < today : !(e.pub && e.pub.getTime() > recent)) return false;
     const ks = keys(e); if(ks.some(k=>seen.has(k))) return false; ks.forEach(k=>seen.add(k)); return true;
   }).map((e,i)=>{
-    e.id = 'ev'+i; e.mad = !!e.town;
-    const t = e.town && EV_TOWNS[e.town];
-    if(t && e.lat==null){ e.lat = t[0]; e.lng = t[1]; e.approx = true; }
+    e.id = 'ev'+i; e.prov = e.pl ? e.pl.prov : null;
+    if(e.pl && e.lat==null){ e.lat = e.pl.c[0]; e.lng = e.pl.c[1]; e.approx = true; }
     return e;
   }).sort((a,b)=>(a.start?a.start:9e15)-(b.start?b.start:9e15) || (b.pub||0)-(a.pub||0));
 }
@@ -1052,7 +1271,7 @@ function evPopup(e){
 }
 function syncEventMarkers(){
   evLayer.clearLayers(); evMarkers.clear();
-  ev.items.filter(e=>e.lat!=null).forEach(e=>{
+  visibleEvents().filter(e=>e.lat!=null).forEach(e=>{
     const color = cssVar(EV_ORGS[e.org].color) || '#666';
     const m = L.circleMarker([e.lat,e.lng], {radius:8, color:e.approx?color:'#ffffff', weight:2, dashArray:e.approx?'3 3':null, fillColor:color, fillOpacity:e.approx?.55:.92});
     m.bindPopup(()=>evPopup(e), {maxWidth:300}); m.bindTooltip(e.title, {direction:'top', offset:[0,-8]});
@@ -1060,10 +1279,13 @@ function syncEventMarkers(){
   });
 }
 function visibleEvents(){
-  return ev.items.filter(e=>ev.orgs.has(e.org) && (ev.scope==='all' || (ev.scope==='mad') === e.mad));
+  const all = ev.scope==='all' || (state.view.ccaa==='all' && !state.view.prov);
+  return ev.items.filter(e=>ev.orgs.has(e.org) && (all || inScopeProv(e.prov)));
 }
 function renderEvents(){
-  $('#evScope').innerHTML = EV_SCOPES.map(([v,l])=>`<button class="chip" type="button" data-scope="${v}" aria-pressed="${ev.scope===v}">${l}</button>`).join('');
+  const scopes = [['all','Toda España']].concat(state.view.ccaa==='all' && !state.view.prov ? [] : [['sel', scopeName()]]);
+  if(!scopes.some(x=>x[0]===ev.scope)) ev.scope = 'all';
+  $('#evScope').innerHTML = scopes.map(([v,l])=>`<button class="chip" type="button" data-scope="${v}" aria-pressed="${ev.scope===v}">${l}</button>`).join('');
   $('#evOrg').innerHTML = Object.entries(EV_ORGS).map(([k,o])=>{
     const n = ev.items.filter(e=>e.org===k).length;
     return n ? `<button class="chip" type="button" data-org="${k}" aria-pressed="${ev.orgs.has(k)}" style="--c:var(${o.color})"><span class="sw"></span>${o.label} <span style="opacity:.6">${n}</span></button>` : '';
@@ -1079,13 +1301,13 @@ function renderEvents(){
     const o = EV_ORGS[e.org];
     const badge = e.start ? `<b>${e.start.getDate()}</b><span>${esc(fmtDate(e.start,{month:'short'}).replace('.',''))}</span>` : '<b>?</b><span>fecha</span>';
     return `<li class="item ev ${ev.selected===e.id?'sel':''}" data-ev="${esc(e.id)}" tabindex="0" style="--c:var(${o.color})">
-      <span class="date ${e.mad?'mad':''}" aria-hidden="true">${badge}</span>
+      <span class="date ${e.prov && inScopeProv(e.prov) && (state.view.ccaa!=='all' || state.view.prov)?'mad':''}" aria-hidden="true">${badge}</span>
       <div>
         <h3>${esc(e.title)}</h3>
         <div class="when"><span class="next">${esc(fmtEvDates(e))}</span></div>
         ${e.place?`<div class="where">${esc(e.place)}</div>`:''}
         ${e.note?`<div class="where">${esc(e.note)}</div>`:''}
-        <div class="meta"><span class="tag" style="border-color:var(${o.color})">${o.label}</span>${e.mad?'<span class="tag mad">Madrid</span>':''}${e.verified?'':'<span class="tag tbc">Por confirmar</span>'}${e.link?`<a href="${esc(e.link)}" target="_blank" rel="noopener">Ver en ${esc(e.site||'la web')}</a>`:''}</div>
+        <div class="meta"><span class="tag" style="border-color:var(${o.color})">${o.label}</span>${e.prov?`<span class="tag mad">${esc(PROV[e.prov].name)}</span>`:''}${e.verified?'':'<span class="tag tbc">Por confirmar</span>'}${e.link?`<a href="${esc(e.link)}" target="_blank" rel="noopener">Ver en ${esc(e.site||'la web')}</a>`:''}</div>
       </div>
     </li>`;
   }).join('') : `<li class="empty">${ev.mode==='loading'?'Cargando…':'No hay próximos eventos con estos filtros.'}</li>`;
@@ -1101,70 +1323,175 @@ function setTab(name){
   const events = name==='events';
   $('#paneGroups').hidden = events; $('#paneEvents').hidden = !events;
   document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected', String(b.dataset.tab===name)));
-  if(events){ map.removeLayer(layer); map.addLayer(evLayer); const pts = ev.items.filter(e=>e.lat!=null).map(e=>[e.lat,e.lng]); if(pts.length) map.fitBounds(pts,{padding:[40,40], maxZoom:12}); }
-  else { map.removeLayer(evLayer); map.addLayer(layer); }
+  activeTab = name; updateLayers();
+  if(events){ const pts = visibleEvents().filter(e=>e.lat!=null).map(e=>[e.lat,e.lng]); if(pts.length) map.fitBounds(pts,{padding:[40,40], maxZoom:12}); }
+  else { fitNext = true; render(); }
   store.set('tab', name);
 }
 $('.tabs').addEventListener('click', e=>{ const b = e.target.closest('.tab'); if(b) setTab(b.dataset.tab); });
-$('#evScope').addEventListener('click', e=>{ const b = e.target.closest('[data-scope]'); if(!b) return; ev.scope = b.dataset.scope; renderEvents(); });
+$('#evScope').addEventListener('click', e=>{ const b = e.target.closest('[data-scope]'); if(!b) return; ev.scope = b.dataset.scope; renderEvents(); syncEventMarkers(); });
 $('#evOrg').addEventListener('click', e=>{
   const b = e.target.closest('[data-org]'); if(!b) return;
   const f = ev.orgs, k = b.dataset.org, all = Object.keys(EV_ORGS);
   if(f.size===all.length){ f.clear(); f.add(k); }
   else if(f.has(k)){ f.delete(k); if(!f.size) all.forEach(x=>f.add(x)); }
   else f.add(k);
-  renderEvents();
+  renderEvents(); syncEventMarkers();
 });
 $('#evList').addEventListener('click', e=>{ if(e.target.closest('a')) return; const it = e.target.closest('[data-ev]'); if(it) selectEvent(it.dataset.ev); });
 $('#evList').addEventListener('keydown', e=>{ if((e.key==='Enter'||e.key===' ') && e.target.dataset && e.target.dataset.ev){ e.preventDefault(); selectEvent(e.target.dataset.ev); } });
 $('#evLinks').innerHTML = EVENT_LINKS.map(([u,l])=>`<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(l)}</a></li>`).join('');
 
 /* ───────────────────────── Carga ───────────────────────── */
-function applyData(rows, contacts, meta){
-  state.gen++;
-  state.groups = rows.concat(EXTRA).map(makeGroup);
-  state.contacts = contacts && contacts.length ? contacts : SNAPSHOT.contacts;
-  Object.assign(state, meta);
-  if(state.selected && !state.groups.some(g=>g.id===state.selected)) state.selected = null;
-  buildControls(); syncMarkers(); fitNext = true; render();
+/* ───────────────────────── Datos por provincia ───────────────────────── */
+const PROV_TTL = 24*3600000;
+const provData = {};          /* id → {rows, contacts, modified, fetchedAt, mode:'live'|'stored'|'snapshot'|'missing'|'error', failed, via} */
+let slugMap = null;           /* id → slug real de la página de Charis (si se pudo leer el índice) */
+function initProvData(){
+  PROVINCES.forEach(p=>{
+    const c = store.get('prov:v1:'+p.id, null) || (p.id==='madrid' ? store.get('lastLive', null) : null);
+    if(c && c.groups && c.groups.length) provData[p.id] = {rows:c.groups, contacts:c.contacts||[], modified:c.modified, fetchedAt:c.fetchedAt||0, mode:'stored'};
+  });
+  if(!provData.madrid) provData.madrid = {rows:SNAPSHOT.groups.map(g=>({name:g[0],city:g[1],address:g[2],schedule:g[3],realidad:g[4]})),
+    contacts:SNAPSHOT.contacts, modified:SNAPSHOT.modified, mode:'snapshot'};
 }
-function setStatus(){
-  const el = $('#status'), tx = $('#statusText');
-  el.dataset.state = state.mode;
-  const mod = state.modified ? new Date(state.modified) : null;
-  const modTxt = mod && !isNaN(mod) ? ' · página editada por Charis el '+fmtDate(mod) : '';
-  if(state.mode==='loading') tx.textContent = 'Consultando la web de Charis…';
-  else if(state.mode==='live') tx.textContent = 'Actualizado ahora desde la ' + state.via + modTxt;
-  else if(state.mode==='stored') tx.textContent = 'Sin conexión con Charis · copia del ' + fmtDate(new Date(state.fetchedAt),{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) + modTxt;
-  else tx.textContent = 'Sin conexión con Charis · copia incluida del ' + fmtDate(new Date(SNAPSHOT.captured+'T12:00:00')) + modTxt;
+function provForSlug(s){
+  const k = norm(s.replace(/^grupos-de-oracion-/,'').replace(/-\d+$/,'').replace(/-/g,' '));
+  return PROVINCES.find(p=>p.alias.includes(k)) || null;
 }
-async function refresh(){
-  const btn = $('#refresh'); btn.disabled = true;
-  const prevMode = state.mode;
-  state.mode = 'loading'; setStatus();
-  const prevSig = store.get('lastSig', null);
-  try{
-    const live = await loadLive();
-    applyData(live.groups, live.contacts, {mode:'live', modified:live.modified, fetchedAt:Date.now(), via:live.via});
-    const baseline = prevSig || SNAPSHOT.groups.map(g=>({id:idOf(g[0],g[1]), n:g[0], a:g[2], s:g[3]}));
-    computeNews(baseline); render();
-    store.set('lastLive', {groups:live.groups, contacts:live.contacts, modified:live.modified, fetchedAt:state.fetchedAt});
-    store.set('lastSig', signature());
-  }catch(e){
-    if(!state.groups.length || prevMode==='loading'){
-      const saved = store.get('lastLive', null);
-      if(saved && saved.groups && saved.groups.length){
-        applyData(saved.groups, saved.contacts, {mode:'stored', modified:saved.modified, fetchedAt:saved.fetchedAt});
-      } else {
-        applyData(SNAPSHOT.groups.map(g=>({name:g[0],city:g[1],address:g[2],schedule:g[3],realidad:g[4]})), SNAPSHOT.contacts, {mode:'snapshot', modified:SNAPSHOT.modified});
-      }
-    } else {
-      state.mode = prevMode;
-    }
+/* Índice de Charis con los enlaces de cada provincia; corrige los enlaces supuestos */
+async function discoverSlugs(){
+  const cached = store.get('slugs:v1', null);
+  if(cached && cached.map && Date.now()-cached.t < 7*86400000) return cached.map;
+  const tries = [
+    async()=>{ const d = await jsonp(WP+'charisespana.com/posts/slug:grupos-de-oracion?'+WP_FIELDS, 9000); if(!d || d.error || !d.content) throw 0; return d.content; },
+    async()=>{ const d = await (await fetchTimeout(WP2+'pages?slug=grupos-de-oracion&_fields=content', 9000)).json(); if(!Array.isArray(d) || !d[0]) throw 0; return d[0].content.rendered; }
+  ].concat(CHARIS_PROXIES.map(px=>async()=>{ const r = await fetchTimeout(px(PAGE_URL), 12000); if(!r.ok) throw 0; return r.text(); }));
+  for(const t of tries){
+    try{
+      const html = await t();
+      const map = {};
+      (html.match(/grupos-de-oracion-[a-z0-9-]+/gi)||[]).forEach(s=>{ const p = provForSlug(s.toLowerCase()); if(p && !map[p.id]) map[p.id] = s.toLowerCase(); });
+      if(Object.keys(map).length >= 5){ store.set('slugs:v1', {map, t:Date.now()}); return map; }
+    }catch(e){}
   }
-  setStatus();
-  btn.disabled = false;
-  refineLocations();
+  return null;
+}
+const sigOf = rows => rows.map(g=>({id:idOf(g.name,g.city), n:g.name, a:g.address, s:g.schedule}));
+async function loadProvince(id, force){
+  const cur = provData[id];
+  if(!force && cur && (cur.mode==='live' || cur.mode==='missing' || (cur.mode==='stored' && Date.now()-(cur.fetchedAt||0) < PROV_TTL))) return cur;
+  if(slugMap && !slugMap[id]){ if(!cur) provData[id] = {rows:[], contacts:[], mode:'missing'}; return provData[id]; }
+  const slug = (slugMap && slugMap[id]) || PROV[id].slug;
+  try{
+    const live = await loadLive(slug, id==='madrid' ? 5 : 1, PROV[id].name);
+    const prev = store.get('lastSig:'+id, null) || (id==='madrid' ? (store.get('lastSig', null) || sigOf(provData.madrid.mode==='snapshot' ? provData.madrid.rows : [])) : null);
+    provData[id] = {rows:live.groups, contacts:live.contacts, modified:live.modified, fetchedAt:Date.now(), mode:'live', via:live.via};
+    store.set('prov:v1:'+id, {groups:live.groups, contacts:live.contacts, modified:live.modified, fetchedAt:Date.now()});
+    newsFor(id, live.groups, prev && prev.length ? prev : null);
+    store.set('lastSig:'+id, sigOf(live.groups));
+  }catch(e){
+    if(cur) cur.failed = true; else provData[id] = {rows:[], contacts:[], mode:'error'};
+  }
+  return provData[id];
+}
+
+/* ───────────────────────── Ámbito (España / CCAA / provincia) ───────────────────────── */
+const inScopeProv = pid => { const v = state.view; return !!pid && (v.prov ? pid===v.prov : (v.ccaa==='all' || PROV[pid].ccaa===v.ccaa)); };
+const inScope = g => inScopeProv(g.prov);
+const scopeName = () => { const v = state.view; return v.prov ? PROV[v.prov].name : v.ccaa==='all' ? 'España' : CCAA_NAMES[v.ccaa]; };
+const scopeProvs = () => PROVINCES.filter(p=>inScopeProv(p.id));
+let geoGen = 0;
+function setView(ccaa, prov, opts){
+  if(prov && PROV[prov]) ccaa = PROV[prov].ccaa;
+  else { prov = null; if(ccaa!=='all'){ const ps = PROVINCES.filter(p=>p.ccaa===ccaa); if(ps.length===1) prov = ps[0].id; } }
+  state.view = {ccaa, prov};
+  state.filter.city = 'all';
+  store.set('view', state.view);
+  if(!(opts && opts.fromHash)){ try{ history.replaceState(null, '', prov ? '#p='+prov : ccaa!=='all' ? '#ccaa='+ccaa : location.pathname+location.search); }catch(e){} }
+  geoGen++; $('#geoStatus').textContent = '';
+  fitNext = true;
+  buildControls(); updateLayers(); render(); setStatus(); renderEvents();
+  if(prov) loadOne(prov, false);
+}
+function viewFromHash(){
+  const h = (location.hash||'').match(/^#(p|ccaa)=([a-z-]+)$/);
+  if(!h) return null;
+  if(h[1]==='p' && PROV[h[2]]) return {ccaa:PROV[h[2]].ccaa, prov:h[2]};
+  if(h[1]==='ccaa' && CCAA_NAMES[h[2]]) return {ccaa:h[2], prov:null};
+  return null;
+}
+
+function rebuildGroups(){
+  const rows = [];
+  Object.entries(provData).forEach(([id,d])=>(d.rows||[]).forEach(r=>rows.push(Object.assign({}, r, {prov:id}))));
+  state.groups = rows.concat(EXTRA).map(makeGroup);
+  collectNews();
+  if(state.selected && !state.groups.some(g=>g.id===state.selected)) state.selected = null;
+  buildControls(); syncMarkers(); render();
+}
+let rbTimer;
+const scheduleRebuild = () => { clearTimeout(rbTimer); rbTimer = setTimeout(()=>{ rebuildGroups(); setStatus(); }, 700); };
+let progress = null, loadingProv = null;
+function setStatus(){
+  const el = $('#status'), tx = $('#statusText'), v = state.view;
+  const when = t => fmtDate(new Date(t),{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  if(v.prov){
+    const d = provData[v.prov], name = PROV[v.prov].name;
+    const mod = d && d.modified ? new Date(d.modified) : null;
+    const modTxt = mod && !isNaN(mod) ? ' · página editada por Charis el '+fmtDate(mod) : '';
+    let st, txt;
+    if(loadingProv===v.prov || !d){ st = 'loading'; txt = 'Consultando la web de Charis · '+name+'…'; }
+    else if(d.mode==='live'){ st = 'live'; txt = 'Actualizado ahora desde la '+d.via+' · '+name+modTxt; }
+    else if(d.mode==='stored'){ st = d.failed ? 'stored' : 'live'; txt = (d.failed ? 'Sin conexión con Charis · copia del ' : 'Datos de Charis del ')+when(d.fetchedAt)+' · '+name+modTxt; }
+    else if(d.mode==='snapshot'){ st = 'snapshot'; txt = 'Sin conexión con Charis · copia incluida del '+fmtDate(new Date(SNAPSHOT.captured+'T12:00:00'))+' · '+name+modTxt; }
+    else if(d.mode==='missing'){ st = 'stored'; txt = 'Charis no publica grupos de '+name+'; se muestran las adoraciones y misas conocidas'; }
+    else { st = 'snapshot'; txt = 'Sin conexión con Charis y sin copia de '+name+'; se muestran las adoraciones y misas conocidas'; }
+    el.dataset.state = st; tx.textContent = txt; return;
+  }
+  if(progress){ el.dataset.state = 'loading'; tx.textContent = `Leyendo Charis por provincias… ${progress.done}/${progress.total}`; return; }
+  const ps = scopeProvs();
+  const ok = ps.filter(p=>{ const d = provData[p.id]; return d && (d.mode==='live' || (d.mode==='stored' && !d.failed)); }).length;
+  const bad = ps.filter(p=>{ const d = provData[p.id]; return !d || d.mode==='error' || d.mode==='snapshot' || d.failed; }).length;
+  el.dataset.state = !ok ? 'snapshot' : bad ? 'stored' : 'live';
+  tx.textContent = ok ? `Datos de Charis de ${ok} provincia${ok>1?'s':''}`+(bad ? ` · ${bad} sin conexión (se usa la copia guardada si la hay)` : '')
+    : (ps.some(p=>p.id==='madrid') ? 'Sin conexión con Charis · solo está disponible la copia incluida de Madrid' : 'Sin conexión con Charis · se muestran las adoraciones y misas conocidas');
+}
+async function loadOne(id, force){
+  loadingProv = id; setStatus();
+  await loadProvince(id, force);
+  loadingProv = null;
+  rebuildGroups(); setStatus();
+  if(state.view.prov===id) refineLocations();
+}
+async function loadMany(ids, force){
+  const todo = ids.filter(id=>{ const d = provData[id];
+    return force || !d || d.mode==='snapshot' || d.mode==='error' || (d.mode==='stored' && Date.now()-(d.fetchedAt||0) >= PROV_TTL); });
+  if(!todo.length) return;
+  progress = {done:0, total:todo.length}; setStatus();
+  let i = 0, ok = 0, fails = 0, stop = false;
+  const worker = async()=>{
+    while(!stop && i < todo.length){
+      const d = await loadProvince(todo[i++], force);
+      progress.done++;
+      if(d.mode==='live') ok++;
+      else if(d.mode!=='missing' && ++fails>=6 && !ok) stop = true;   /* sin conexión: no seguir insistiendo */
+      scheduleRebuild(); setStatus();
+    }
+  };
+  await Promise.all([worker(), worker(), worker(), worker()]);
+  progress = null; clearTimeout(rbTimer); rebuildGroups(); setStatus();
+}
+let refreshing = false;
+async function refreshScope(force){
+  if(refreshing) return; refreshing = true;
+  const btn = $('#refresh'); btn.disabled = true;
+  if(!slugMap){ setStatus(); slugMap = await discoverSlugs(); }
+  const v = state.view;
+  if(v.prov) await loadOne(v.prov, force);
+  else await loadMany(scopeProvs().map(p=>p.id), force);
+  btn.disabled = false; refreshing = false;
+  await loadMany(PROVINCES.map(p=>p.id), false);   /* el resto, en segundo plano y con caché */
 }
 
 /* ───────────────────────── Eventos ───────────────────────── */
@@ -1186,16 +1513,20 @@ $('#realChips').addEventListener('click', e=>{
   fitNext = true; render();
 });
 $('#city').addEventListener('change', e=>{ state.filter.city = e.target.value; fitNext = true; render(); });
+$('#ccaa').addEventListener('change', e=>setView(e.target.value, null));
+$('#prov').addEventListener('change', e=>setView(state.view.ccaa, e.target.value || null));
+window.addEventListener('hashchange', ()=>{ const v = viewFromHash(); if(v) setView(v.ccaa, v.prov, {fromHash:true}); });
 $('#sort').addEventListener('change', e=>{ state.sort = e.target.value; render(); });
 $('#list').addEventListener('click', e=>{ const it = e.target.closest('.item'); if(it) select(it.dataset.id, true); });
 $('#list').addEventListener('keydown', e=>{ if((e.key==='Enter'||e.key===' ') && e.target.classList.contains('item')){ e.preventDefault(); select(e.target.dataset.id, true); } });
-$('#refresh').addEventListener('click', ()=>{ refresh(); loadEvents(); });
+$('#refresh').addEventListener('click', ()=>{ refreshScope(true); loadEvents(); });
 $('#near').addEventListener('click', ()=>{
   const btn = $('#near');
   if(!navigator.geolocation){ btn.textContent = 'Ubicación no disponible'; return; }
   btn.disabled = true;
   navigator.geolocation.getCurrentPosition(pos=>{
     state.you = [pos.coords.latitude, pos.coords.longitude];
+    if(!state.view.prov){ const near = PROVINCES.slice().sort((a,b)=>km(state.you,a.c)-km(state.you,b.c))[0]; setView(near.ccaa, near.id); }
     if(youMarker) map.removeLayer(youMarker);
     youMarker = L.marker(state.you, {icon:L.divIcon({className:'', html:'<div class="you"></div>', iconSize:[14,14]}), title:'Tu ubicación', zIndexOffset:1000}).addTo(map);
     const opt = $('#sort option[value="dist"]'); opt.disabled = false;
@@ -1209,8 +1540,14 @@ $('#near').addEventListener('click', ()=>{
 /* Recalcular «Hoy / Mañana» cada minuto si la página queda abierta */
 setInterval(()=>{ if(state.groups.length) render(); }, 60000);
 
+initProvData();
+{
+  const v0 = viewFromHash() || store.get('view', null);
+  if(v0 && (v0.ccaa==='all' || CCAA_NAMES[v0.ccaa]) && (!v0.prov || PROV[v0.prov])) state.view = {ccaa:v0.prov ? PROV[v0.prov].ccaa : v0.ccaa, prov:v0.prov || null};
+}
+rebuildGroups(); updateLayers(); setStatus();
 setTiles();
-refresh();
+refreshScope(false);
 loadEvents();
 if(store.get('tab','groups')==='events') setTab('events');
 })();
