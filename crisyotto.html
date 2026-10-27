@@ -254,6 +254,8 @@ h2{font:700 clamp(30px,4.4vw,42px)/1.1 var(--serif);margin:0 0 22px;letter-spaci
 footer{margin-top:30px;padding-top:34px;padding-bottom:44px;border-top:1px solid var(--line);text-align:center}
 footer .social{justify-content:center;margin-bottom:18px}
 footer small{color:var(--muted)}
+.cookies-link{margin-left:12px;padding:0;border:0;background:none;color:var(--muted);font:inherit;font-size:13px;text-decoration:underline;cursor:pointer}
+.cookies-link:focus-visible{outline:3px solid var(--otto);outline-offset:3px}
 /* Reproductor flotante (Audiomack) */
 .btn.am:hover{border-color:var(--cris)}
 .btn.fb:hover{border-color:var(--otto)}
@@ -524,7 +526,17 @@ footer small{color:var(--muted)}
     </a>
   </div>
   <small>© Cris y Otto</small>
+  <button type="button" class="cookies-link" id="cookiesBtn" hidden>Cookies</button>
 </footer>
+
+<script>
+/* Cuando la web va dentro de crisyotto.es, avisa a esa página (cambio de pestaña, música, cookies) para Analytics */
+function avisa(msg){ if(window.parent !== window) try{ window.parent.postMessage(msg, '*'); }catch(e){} }
+if(window.parent !== window){
+  var cb = document.getElementById('cookiesBtn'); cb.hidden = false;
+  cb.addEventListener('click', function(){ avisa({cyo:'cookies'}); });
+}
+</script>
 
 <button class="music-btn" id="musicBtn" type="button" aria-expanded="false" aria-controls="player"><span class="note" aria-hidden="true">♪</span><span id="musicLabel">Escuchar</span></button>
 <div class="player min" id="player" role="dialog" aria-label="Reproductor de música" hidden>
@@ -545,7 +557,7 @@ footer small{color:var(--muted)}
       var f = document.createElement('iframe');
       f.src = EMBED; f.title = 'Reproductor de Audiomack: lista Instrumentales para rezar';
       f.setAttribute('allow', 'autoplay; encrypted-media'); f.setAttribute('scrolling', 'no');
-      slot.appendChild(f); loaded = true;
+      slot.appendChild(f); loaded = true; avisa({cyo:'escuchar'});
     }
     player.hidden = false;
     requestAnimationFrame(function(){ player.classList.remove('min'); });
@@ -572,11 +584,12 @@ footer small{color:var(--muted)}
   var items = [].slice.call(document.querySelectorAll('#galeria [data-open]'));
   document.getElementById('galCount').textContent = items.length;
   document.querySelectorAll('.galN').forEach(function(e){ e.textContent = items.length; });
-  function show(){
+  function show(e){
     var h = location.hash.slice(1), v = views[h] ? h : 'inicio';
     Object.keys(views).forEach(function(k){ views[k].hidden = k !== v; });
     document.querySelectorAll('.tab').forEach(function(t){ t.setAttribute('aria-selected', String(t.getAttribute('aria-controls') === v)); });
     window.scrollTo(0, 0);
+    if(e) avisa({cyo:'vista', vista:v});  /* la primera carga ya la cuenta crisyotto.es como visita */
   }
   window.addEventListener('hashchange', show); show();
   /* Teclado en las pestañas: flechas izquierda y derecha */
