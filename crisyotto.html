@@ -269,7 +269,7 @@ footer small{color:var(--muted)}
 .player-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 2px 8px}
 .player-head strong{font:700 15px/1.25 var(--serif)}
 .player-head button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:5px 11px;font:600 13px/1 var(--sans);cursor:pointer}
-.player iframe{display:block;width:100%;height:252px;border:0;border-radius:12px;background:var(--bg)}
+.player iframe{display:block;width:100%;height:400px;max-height:calc(100vh - 190px);border:0;border-radius:12px;background:var(--bg)}
 .player .open{display:inline-block;margin:8px 2px 0;font-size:13px;color:var(--muted)}
 @media (max-width:600px){ .music-btn{right:16px;bottom:16px} .player{right:16px;bottom:72px} }
 @media (prefers-reduced-motion: reduce){ .player{transition:none} .music-btn.playing .note{animation:none} }
@@ -362,8 +362,8 @@ footer small{color:var(--muted)}
     <div class="listen">
       <div class="listen-icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke-width="4" stroke-linecap="round"><path d="M6 24v0M14 17v14M22 9v30" stroke="var(--cris)"/><path d="M30 14v20M38 19v10M44 24v0" stroke="var(--otto)"/></svg></div>
       <div class="listen-txt">
-        <h3>Instrumental para rezar · Te adoramos</h3>
-        <p>Para acompañar la oración, la adoración o un rato de silencio.</p>
+        <h3>Instrumentales para rezar</h3>
+        <p>Para acompañar la oración, la adoración o un rato de silencio. Elige la que quieras.</p>
         <div class="listen-btns">
           <button class="btn play" type="button" id="listenBtn" aria-controls="player">▶ Escuchar aquí</button>
           <a class="btn am" href="https://audiomack.com/crisyotto" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M3 12v0M7 9v6M11 5v14M15 8v8M19 10v4"/></svg>Más en Audiomack</a>
@@ -529,21 +529,21 @@ footer small{color:var(--muted)}
 <button class="music-btn" id="musicBtn" type="button" aria-expanded="false" aria-controls="player"><span class="note" aria-hidden="true">♪</span><span id="musicLabel">Escuchar</span></button>
 <div class="player min" id="player" role="dialog" aria-label="Reproductor de música" hidden>
   <div class="player-head">
-    <strong>Instrumental para rezar · Te adoramos</strong>
+    <strong>Instrumentales para rezar</strong>
     <button type="button" id="playerMin">Minimizar</button>
   </div>
   <div id="playerSlot"></div>
-  <a class="open" href="https://audiomack.com/crisyotto/song/instrumental-para-rezar-basada-en-te-adoramos" target="_blank" rel="noopener">Abrir en Audiomack ↗</a>
+  <a class="open" href="https://audiomack.com/crisyotto/playlist/instrumentales-para-rezar" target="_blank" rel="noopener">Abrir en Audiomack ↗</a>
 </div>
 <script>
 (function(){
-  var EMBED = 'https://audiomack.com/embed/song/crisyotto/instrumental-para-rezar-basada-en-te-adoramos?background=1';
+  var EMBED = 'https://audiomack.com/embed/playlist/crisyotto/instrumentales-para-rezar?background=1';
   var btn = document.getElementById('musicBtn'), label = document.getElementById('musicLabel'),
       player = document.getElementById('player'), slot = document.getElementById('playerSlot'), loaded = false;
   function open(){
     if(!loaded){  /* el reproductor de Audiomack solo se carga al pulsar el botón */
       var f = document.createElement('iframe');
-      f.src = EMBED; f.title = 'Reproductor de Audiomack: Instrumental para rezar basada en Te adoramos';
+      f.src = EMBED; f.title = 'Reproductor de Audiomack: lista Instrumentales para rezar';
       f.setAttribute('allow', 'autoplay; encrypted-media'); f.setAttribute('scrolling', 'no');
       slot.appendChild(f); loaded = true;
     }
