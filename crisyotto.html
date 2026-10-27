@@ -110,6 +110,24 @@ h2{font:700 clamp(30px,4.4vw,42px)/1.1 var(--serif);margin:0 0 22px;letter-spaci
 footer{margin-top:30px;padding-top:34px;padding-bottom:44px;border-top:1px solid var(--line);text-align:center}
 footer .social{justify-content:center;margin-bottom:18px}
 footer small{color:var(--muted)}
+/* Reproductor flotante (Audiomack) */
+.btn.am:hover{border-color:var(--cris)}
+.music-btn{position:fixed;right:20px;bottom:20px;z-index:50;display:inline-flex;align-items:center;gap:8px;padding:12px 18px;border-radius:999px;border:0;cursor:pointer;
+  background:linear-gradient(135deg,var(--cris),var(--otto));color:#fff;font:700 15px/1 var(--sans);box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.music-btn:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.music-btn .note{font-size:18px;line-height:1}
+.music-btn.playing .note{animation:bounce 1.2s ease-in-out infinite}
+@keyframes bounce{50%{transform:translateY(-3px)}}
+.player{position:fixed;right:20px;bottom:78px;z-index:50;width:min(360px,calc(100vw - 32px));background:var(--paper);border-radius:18px;box-shadow:var(--shadow);
+  border:1px solid var(--line);padding:12px;transition:transform .25s ease,opacity .25s ease}
+.player.min{transform:translateY(24px);opacity:0;pointer-events:none}
+.player-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 2px 8px}
+.player-head strong{font:700 15px/1.25 var(--serif)}
+.player-head button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:5px 11px;font:600 13px/1 var(--sans);cursor:pointer}
+.player iframe{display:block;width:100%;height:252px;border:0;border-radius:12px;background:var(--bg)}
+.player .open{display:inline-block;margin:8px 2px 0;font-size:13px;color:var(--muted)}
+@media (max-width:600px){ .music-btn{right:16px;bottom:16px} .player{right:16px;bottom:72px} }
+@media (prefers-reduced-motion: reduce){ .player{transition:none} .music-btn.playing .note{animation:none} }
 @media (prefers-reduced-motion: reduce){ .btn{transition:none} .btn:hover{transform:none} }
 </style>
 </head>
@@ -131,6 +149,10 @@ footer small{color:var(--muted)}
           <a class="btn yt" href="https://youtube.com/@crisyotto" target="_blank" rel="noopener">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="4" fill="currentColor"/><path d="M10 9l5 3-5 3z" fill="var(--paper)"/></svg>
             YouTube
+          </a>
+          <a class="btn am" href="https://audiomack.com/crisyotto" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M3 12v0M7 9v6M11 5v14M15 8v8M19 10v4"/></svg>
+            Audiomack
           </a>
         </div>
       </div>
@@ -248,9 +270,49 @@ footer small{color:var(--muted)}
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="4" fill="currentColor"/><path d="M10 9l5 3-5 3z" fill="var(--paper)"/></svg>
       @crisyotto
     </a>
+    <a class="btn am" href="https://audiomack.com/crisyotto" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M3 12v0M7 9v6M11 5v14M15 8v8M19 10v4"/></svg>
+      @crisyotto
+    </a>
   </div>
   <small>© Cris y Otto</small>
 </footer>
+
+<button class="music-btn" id="musicBtn" type="button" aria-expanded="false" aria-controls="player"><span class="note" aria-hidden="true">♪</span><span id="musicLabel">Escuchar</span></button>
+<div class="player min" id="player" role="dialog" aria-label="Reproductor de música" hidden>
+  <div class="player-head">
+    <strong>Instrumental para rezar · Te adoramos</strong>
+    <button type="button" id="playerMin">Minimizar</button>
+  </div>
+  <div id="playerSlot"></div>
+  <a class="open" href="https://audiomack.com/crisyotto/song/instrumental-para-rezar-basada-en-te-adoramos" target="_blank" rel="noopener">Abrir en Audiomack ↗</a>
+</div>
+<script>
+(function(){
+  var EMBED = 'https://audiomack.com/embed/song/crisyotto/instrumental-para-rezar-basada-en-te-adoramos?background=1';
+  var btn = document.getElementById('musicBtn'), label = document.getElementById('musicLabel'),
+      player = document.getElementById('player'), slot = document.getElementById('playerSlot'), loaded = false;
+  function open(){
+    if(!loaded){  /* el reproductor de Audiomack solo se carga al pulsar el botón */
+      var f = document.createElement('iframe');
+      f.src = EMBED; f.title = 'Reproductor de Audiomack: Instrumental para rezar basada en Te adoramos';
+      f.setAttribute('allow', 'autoplay; encrypted-media'); f.setAttribute('scrolling', 'no');
+      slot.appendChild(f); loaded = true;
+    }
+    player.hidden = false;
+    requestAnimationFrame(function(){ player.classList.remove('min'); });
+    btn.setAttribute('aria-expanded', 'true'); btn.classList.remove('playing'); label.textContent = 'Ocultar';
+  }
+  function minimize(){
+    player.classList.add('min');  /* se oculta sin quitar el iframe, para que la música siga sonando */
+    btn.setAttribute('aria-expanded', 'false');
+    if(loaded){ btn.classList.add('playing'); label.textContent = 'Sonando'; } else label.textContent = 'Escuchar';
+  }
+  btn.addEventListener('click', function(){ player.classList.contains('min') ? open() : minimize(); });
+  document.getElementById('playerMin').addEventListener('click', minimize);
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && !player.classList.contains('min')) minimize(); });
+})();
+</script>
 
 </body>
 </html>
