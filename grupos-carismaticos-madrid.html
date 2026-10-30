@@ -1390,7 +1390,8 @@ const ISO = {almeria:'ES-AL', cadiz:'ES-CA', cordoba:'ES-CO', granada:'ES-GR', h
   barcelona:'ES-B', girona:'ES-GI', lleida:'ES-L', tarragona:'ES-T', alicante:'ES-A', castellon:'ES-CS', valencia:'ES-V',
   badajoz:'ES-BA', caceres:'ES-CC', 'a-coruna':'ES-C', lugo:'ES-LU', ourense:'ES-OR', pontevedra:'ES-PO', madrid:'ES-M', murcia:'ES-MU',
   navarra:'ES-NA', alava:'ES-VI', bizkaia:'ES-BI', gipuzkoa:'ES-SS', 'la-rioja':'ES-LO', ceuta:'ES-CE', melilla:'ES-ML'};
-const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://overpass.private.coffee/api/interpreter'];
+const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.private.coffee/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
 const PAR_TTL = 7*86400000, PAR_PAGE = 150, PAR_MIN_ZOOM = 11;
 const OSM_DAYS = {su:0, mo:1, tu:2, we:3, th:4, fr:5, sa:6};
 const DAY_ABBR = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
@@ -1462,50 +1463,79 @@ function parFromOsm(el){
 function parQuery(where){
   const scope = where.iso ? '(area.a)' : '('+where.bbox.join(',')+')';
   const sel = d => `nwr["amenity"="place_of_worship"]["religion"="christian"]${d}["name"]${scope};`;
-  return '[out:json][timeout:60];' + (where.iso ? `area["ISO3166-2"="${where.iso}"]->.a;` : '')
-    + '(' + sel('["denomination"~"^(catholic|roman_catholic)$"]') + sel('[!"denomination"]') + ');out center tags;';
+  return '[out:json][timeout:40];' + (where.iso ? `area["ISO3166-2"="${where.iso}"]->.a;` : '')
+    + '(' + sel('["denomination"~"^(catholic|roman_catholic)$"]') + sel('[!"denomination"]') + ');out center tags qt;';
 }
-async function overpass(q){
-  let last;
-  for(const url of OVERPASS){
-    try{
-      const r = await fetchTimeout(url, 70000, {method:'POST', body:'data='+encodeURIComponent(q), headers:{'Content-Type':'application/x-www-form-urlencoded'}});
-      if(!r.ok) throw new Error('HTTP '+r.status);
-      const j = await r.json();
-      return (j.elements||[]).map(parFromOsm).filter(Boolean);
-    }catch(e){ last = e; }
-  }
-  throw last || new Error('sin respuesta');
+/* Los servidores públicos de Overpass a menudo van saturados: se lanza el primero y, si a los 4 s no ha contestado,
+   también el siguiente (y así sucesivamente). Gana la primera respuesta válida y se cancelan las demás. */
+function overpass(q, signal){
+  return new Promise((resolve, reject)=>{
+    const ctls = [], timers = [], errs = [];
+    let next = 0, pending = 0, done = false;
+    const finish = (fn, v) => { if(done) return; done = true; timers.forEach(clearTimeout); ctls.forEach(c=>c.abort()); fn(v); };
+    if(signal){
+      if(signal.aborted) return reject(Object.assign(new Error('cancelada'), {name:'AbortError'}));
+      signal.addEventListener('abort', ()=>finish(reject, Object.assign(new Error('cancelada'), {name:'AbortError'})));
+    }
+    const launch = () => {
+      if(done || next >= OVERPASS.length) return;
+      const url = OVERPASS[next++], ctl = new AbortController(); ctls.push(ctl); pending++;
+      const t = setTimeout(()=>ctl.abort(), 45000); timers.push(t);
+      fetch(url, {method:'POST', body:'data='+encodeURIComponent(q), headers:{'Content-Type':'application/x-www-form-urlencoded'}, signal:ctl.signal, cache:'no-store'})
+        .then(r=>{ if(!r.ok) throw new Error(r.status===429 ? 'servidores saturados (429)' : 'error '+r.status); return r.json(); })
+        .then(j=>{
+          if(!j || !Array.isArray(j.elements)) throw new Error('respuesta no válida');
+          if(j.remark && /error|timed out/i.test(j.remark) && !j.elements.length) throw new Error('el servidor no terminó a tiempo');
+          finish(resolve, j.elements.map(parFromOsm).filter(Boolean));
+        })
+        .catch(e=>{
+          clearTimeout(t); pending--;
+          if(done) return;
+          errs.push(e && e.name==='AbortError' ? 'sin respuesta' : (e && e.message) || 'sin conexión');
+          if(next < OVERPASS.length) launch();
+          else if(!pending) finish(reject, new Error([...new Set(errs)].join(' · ')));
+        });
+    };
+    launch();
+    for(let i=1; i<OVERPASS.length; i++) timers.push(setTimeout(launch, 4000*i));
+  });
 }
 function boxOfBounds(b){ return [b.getSouth(), b.getWest(), b.getNorth(), b.getEast()].map(x=>+x.toFixed(4)); }
 async function loadParishes(where, opts){
   const my = ++par.gen, key = where.prov ? 'prov:'+where.prov : 'zona';
+  if(par.ctl) par.ctl.abort();   /* una consulta nueva cancela la anterior (p. ej. la provincia entera, si va lenta) */
+  clearInterval(par.tick);
   const cached = where.prov ? store.get('par:v1:'+where.prov, null) : null;
   par.key = key; par.prov = where.prov || null; par.shown = PAR_PAGE; par.selected = null; par.err = '';
-  if(cached && Date.now()-cached.t < PAR_TTL && !(opts && opts.force)){
-    par.items = cached.items; par.mode = 'ready'; par.fetchedAt = cached.t; parSync(true); return;
+  if(cached && cached.items && cached.items.length && Date.now()-cached.t < PAR_TTL && !(opts && opts.force)){
+    par.items = cached.items; par.mode = 'ready'; par.fetchedAt = cached.t; parSync(!(opts && opts.keepView)); return;
   }
-  par.items = []; par.mode = 'loading'; parSync(false);
+  const ctl = par.ctl = new AbortController();
+  par.items = []; par.mode = 'loading'; par.t0 = Date.now(); parSync(false);
+  par.tick = setInterval(()=>{ if(activeTab==='parishes' && par.mode==='loading') renderParishes(); }, 1000);
   try{
     let items;
     if(where.prov){
-      items = await overpass(parQuery({iso:ISO[where.prov]}));
-      if(!items.length){ const [w,n,e,s] = boxOf(where.prov); items = await overpass(parQuery({bbox:[s,w,n,e]})); }  /* respaldo: caja aproximada de la provincia */
-    } else items = await overpass(parQuery({bbox:where.bbox}));
+      items = await overpass(parQuery({iso:ISO[where.prov]}), ctl.signal);
+      if(!items.length){ const [w,n,e,s] = boxOf(where.prov); items = await overpass(parQuery({bbox:[s,w,n,e]}), ctl.signal); }  /* respaldo: caja aproximada de la provincia */
+    } else items = await overpass(parQuery({bbox:where.bbox}), ctl.signal);
     if(my!==par.gen) return;
     const seen = new Set(); items = items.filter(p=>!seen.has(p.id) && seen.add(p.id));
     par.items = items; par.mode = 'ready'; par.fetchedAt = Date.now();
-    if(where.prov) store.set('par:v1:'+where.prov, {t:par.fetchedAt, items});
+    if(where.prov && items.length) store.set('par:v1:'+where.prov, {t:par.fetchedAt, items});
     parSync(!(opts && opts.keepView));
   }catch(e){
     if(my!==par.gen) return;
     par.mode = 'error'; par.err = e && e.message || ''; parSync(false);
+  }finally{
+    if(my===par.gen){ clearInterval(par.tick); par.ctl = null; }
   }
 }
-/* Al abrir la pestaña o cambiar de provincia */
-function parOnView(fit){
+/* Al abrir la pestaña (changed = false) o al cambiar de provincia (changed = true) */
+function parOnView(fit, changed){
   const p = state.view.prov;
-  if(p){ if(par.key!=='prov:'+p || par.mode==='error') loadParishes({prov:p}); else parSync(fit); }
+  if(par.key==='zona' && !changed){ parSync(false); return; }   /* se conserva la búsqueda por zona al cambiar de pestaña */
+  if(p){ if(changed || par.key!=='prov:'+p || par.mode==='error') loadParishes({prov:p}); else parSync(fit); }
   else if(par.key==='zona') parSync(false);
   else { par.key = null; par.items = []; par.mode = 'idle'; parSync(false); if(fit){ const sp = scopeProvs().map(x=>x.c); if(sp.length) map.fitBounds(sp,{padding:[30,30], maxZoom:8}); } }
 }
@@ -1588,7 +1618,7 @@ function parVisible(){
 function renderParishes(){
   $('#parChips').innerHTML = PAR_CHIPS.map(([k,l])=>`<button class="chip" type="button" data-pf="${k}" aria-pressed="${par.filter===k}">${l}</button>`).join('');
   const area = $('#parArea'), z = map.getZoom();
-  area.disabled = z < PAR_MIN_ZOOM || par.mode==='loading';
+  area.disabled = z < PAR_MIN_ZOOM;
   area.title = z < PAR_MIN_ZOOM ? 'Acércate en el mapa para buscar en la zona que ves' : 'Buscar parroquias en la zona que ves en el mapa';
   $('#parRetry').hidden = par.mode!=='error';
   const st = $('#parStatus'), list = $('#parList'), now = new Date();
@@ -1600,8 +1630,18 @@ function renderParishes(){
     parLayer.eachLayer(m=>m.setStyle(parMarkerStyle({raw:''},false)));
     return;
   }
-  if(par.mode==='loading'){ st.textContent = 'Consultando OpenStreetMap…'; list.innerHTML = '<li class="empty">Cargando parroquias de '+esc(where)+'… La primera vez puede tardar unos segundos.</li>'; return; }
-  if(par.mode==='error'){ st.textContent = 'No se ha podido consultar OpenStreetMap.'; list.innerHTML = '<li class="empty">Los servidores de OpenStreetMap no responden ahora mismo. Prueba de nuevo en un rato con «Reintentar».</li>'; return; }
+  if(par.mode==='loading'){
+    const s = Math.round((Date.now()-(par.t0||Date.now()))/1000);
+    st.textContent = 'Consultando OpenStreetMap…'+(s>=2 ? ' '+s+' s' : '');
+    list.innerHTML = '<li class="empty">Cargando parroquias de '+esc(where)+'… La primera vez puede tardar unos segundos.'
+      + (s>=20 ? '<br><br><strong>OpenStreetMap va lento ahora.</strong> Puedes acercar el mapa a tu barrio y pulsar «Buscar en esta zona del mapa» (es mucho más rápido), o pulsar «Cerca de mí».' : '') + '</li>';
+    return;
+  }
+  if(par.mode==='error'){
+    st.textContent = 'No se ha podido consultar OpenStreetMap.';
+    list.innerHTML = '<li class="empty">Los servidores de OpenStreetMap no responden ahora mismo'+(par.err ? ' ('+esc(par.err)+')' : '')+'.<br>Prueba con «Reintentar», o acerca el mapa a tu zona y pulsa «Buscar en esta zona del mapa».</li>';
+    return;
+  }
   const {all, view} = parVisible();
   const withTimes = par.items.filter(p=>p.raw).length;
   $('#parCount').textContent = par.items.length ? String(par.items.length) : '';
@@ -1648,7 +1688,7 @@ $('#parList').addEventListener('click', e=>{
 $('#parList').addEventListener('keydown', e=>{ if((e.key==='Enter'||e.key===' ') && e.target.dataset && e.target.dataset.par){ e.preventDefault(); parSelect(e.target.dataset.par, true); } });
 $('#parArea').addEventListener('click', ()=>{ if(map.getZoom() >= PAR_MIN_ZOOM) loadParishes({bbox:boxOfBounds(map.getBounds())}, {keepView:true}); });
 $('#parRetry').addEventListener('click', ()=>{ if(par.prov) loadParishes({prov:par.prov}, {force:true}); else if(map.getZoom() >= PAR_MIN_ZOOM) loadParishes({bbox:boxOfBounds(map.getBounds())}, {keepView:true}); });
-map.on('zoomend', ()=>{ if(activeTab==='parishes') $('#parArea').disabled = map.getZoom() < PAR_MIN_ZOOM || par.mode==='loading'; });
+map.on('zoomend', ()=>{ if(activeTab==='parishes') $('#parArea').disabled = map.getZoom() < PAR_MIN_ZOOM; });
 
 /* ───────────────────────── Carga ───────────────────────── */
 /* ───────────────────────── Datos por provincia ───────────────────────── */
@@ -1720,7 +1760,7 @@ function setView(ccaa, prov, opts){
   geoGen++; $('#geoStatus').textContent = '';
   fitNext = true;
   buildControls(); updateLayers(); render(); setStatus(); renderEvents();
-  if(activeTab==='parishes') parOnView(true);
+  if(activeTab==='parishes') parOnView(true, true);
   if(prov) loadOne(prov, false);
 }
 function viewFromHash(){
@@ -1849,7 +1889,13 @@ $('#near').addEventListener('click', ()=>locate($('#near'), ()=>{
   const vis = visibleGroups().filter(g=>g.dist!=null).slice(0,4).map(g=>[g.lat,g.lng]);
   map.fitBounds([state.you, ...vis], {padding:[40,40], maxZoom:15});
 }));
-$('#parNear').addEventListener('click', ()=>locate($('#parNear'), ()=>{ if(!parFitNear()) map.setView(state.you, 15); renderParishes(); }));
+$('#parNear').addEventListener('click', ()=>locate($('#parNear'), ()=>{
+  if(par.mode==='ready' && parFitNear()){ renderParishes(); return; }
+  /* Sin datos aún (o fuera de la zona cargada): consulta rápida de unos 3 km alrededor */
+  const [la,lo] = state.you;
+  map.setView(state.you, 15);
+  loadParishes({bbox:[la-.03, lo-.04, la+.03, lo+.04].map(x=>+x.toFixed(4))}, {keepView:true});
+}));
 /* Recalcular «Hoy / Mañana» cada minuto si la página queda abierta */
 setInterval(()=>{ if(state.groups.length) render(); }, 60000);
 
