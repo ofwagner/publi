@@ -125,6 +125,20 @@ button,input,select{font:inherit;color:inherit}
 .ev .meta a{font-size:12px}
 .tag.mad{border-color:var(--accent);color:var(--accent)}
 .cal-links{margin:8px 0 0;padding-left:18px;display:grid;gap:3px}
+/* Selector de zona común a las pestañas */
+.controls.scope{padding-bottom:12px}
+/* Parroquias */
+.summary .btn{padding:2px 10px;font-size:12px}
+.btn[hidden],.foot[hidden]{display:none}
+.item.par .sw{background:var(--c);box-shadow:0 0 0 1.5px var(--panel),0 0 0 3px var(--c)}
+.item.par.no-times .sw{background:transparent;box-shadow:inset 0 0 0 2px var(--off)}
+.item.par .times{font-size:13px;margin-top:3px}
+.item.par .times .raw{color:var(--muted)}
+.item.par .meta{flex-wrap:wrap;gap:4px 10px}
+.item.par .meta a{font-size:12px}
+.more{display:block;margin:6px auto 10px}
+.pop .ptimes{margin:0 0 7px;font-size:13px}
+.pop .links{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12.5px;margin-top:8px}
 /* Burbujas de provincia en la vista de España */
 .bub{display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--accent);color:#fff;font:700 12.5px/1 var(--sans);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);cursor:pointer}
 .bub.wait{background:var(--off)}
@@ -164,7 +178,7 @@ button,input,select{font:inherit;color:inherit}
 <header class="top">
   <div class="brand">
     <h1>Grupos de oración carismáticos</h1>
-    <p class="sub">España · datos de <a href="https://charisespana.com/grupos-de-oracion/" target="_blank" rel="noopener">Charis España</a> · adoraciones, misas de familias y agenda de eventos</p>
+    <p class="sub">España · datos de <a href="https://charisespana.com/grupos-de-oracion/" target="_blank" rel="noopener">Charis España</a> · adoraciones, misas de familias, agenda de eventos y parroquias con horarios de misa (<a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a>)</p>
   </div>
   <div class="status" id="status" data-state="loading" aria-live="polite">
     <span class="dot" aria-hidden="true"></span>
@@ -176,17 +190,20 @@ button,input,select{font:inherit;color:inherit}
 </header>
 
 <main class="layout">
-  <aside class="panel" aria-label="Grupos y eventos">
-    <div class="tabs" role="tablist">
-      <button class="tab" type="button" role="tab" data-tab="groups" aria-selected="true" aria-controls="paneGroups">Grupos</button>
-      <button class="tab" type="button" role="tab" data-tab="events" aria-selected="false" aria-controls="paneEvents">Eventos <span class="n" id="evCount"></span></button>
-    </div>
-    <div class="pane" id="paneGroups" role="tabpanel">
-    <div class="controls">
+  <aside class="panel" aria-label="Grupos, eventos y parroquias">
+    <div class="controls scope">
       <div class="row">
         <select id="ccaa" aria-label="Comunidad autónoma"></select>
         <select id="prov" aria-label="Provincia"></select>
       </div>
+    </div>
+    <div class="tabs" role="tablist">
+      <button class="tab" type="button" role="tab" data-tab="groups" aria-selected="true" aria-controls="paneGroups">Grupos</button>
+      <button class="tab" type="button" role="tab" data-tab="events" aria-selected="false" aria-controls="paneEvents">Eventos <span class="n" id="evCount"></span></button>
+      <button class="tab" type="button" role="tab" data-tab="parishes" aria-selected="false" aria-controls="paneParishes">Parroquias y misas <span class="n" id="parCount"></span></button>
+    </div>
+    <div class="pane" id="paneGroups" role="tabpanel">
+    <div class="controls">
       <label class="search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
         <input id="q" type="search" placeholder="Buscar grupo, parroquia, calle, barrio…" autocomplete="off" aria-label="Buscar">
@@ -224,6 +241,26 @@ button,input,select{font:inherit;color:inherit}
         <summary>Más calendarios de eventos</summary>
         <ul class="cal-links" id="evLinks"></ul>
       </details>
+    </div>
+    <div class="pane" id="paneParishes" role="tabpanel" hidden>
+      <div class="controls">
+        <label class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="parQ" type="search" placeholder="Buscar parroquia, calle, municipio…" autocomplete="off" aria-label="Buscar parroquia">
+        </label>
+        <div class="chips" id="parChips" role="group" aria-label="Horario de misas"></div>
+        <div class="row">
+          <button class="btn" id="parNear" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>Cerca de mí
+          </button>
+          <button class="btn" id="parArea" type="button" title="Acércate en el mapa para buscar en la zona que ves">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 7V3h4M17 3h4v4M21 17v4h-4M7 21H3v-4"/></svg>Buscar en esta zona del mapa
+          </button>
+        </div>
+      </div>
+      <div class="summary" aria-live="polite"><span id="parStatus"></span><button class="btn" id="parRetry" type="button" hidden>Reintentar</button></div>
+      <ol class="list" id="parList"></ol>
+      <p class="foot">Datos de parroquias: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">colaboradores de OpenStreetMap</a> (ODbL). Los horarios pueden no estar al día: confírmalos con la parroquia. Si falta una parroquia o su horario, cualquiera puede añadirlo en OpenStreetMap con el enlace «Corregir».</p>
     </div>
     <p class="foot">Fuente: <a href="https://charisespana.com/grupos-de-oracion/" target="_blank" rel="noopener">Servicio Nacional de Comunión CHARIS</a>. Si detecta un error o falta algún grupo, Charis pide comunicarlo a los líderes de su realidad. Las categorías «Adoración y misas» y «Familias» no son de Charis: salen de la web de cada parroquia o de directorios de misas, enlazados en cada ficha; las marcadas «Por confirmar» proceden de datos antiguos. Los eventos se leen al abrir la página de rcc-es.com, maranatha.es y rccee.es (con una lista incluida por si fallan); la fecha se deduce del texto de cada anuncio, así que conviene confirmarla en el enlace. Mapa y ubicaciones © colaboradores de OpenStreetMap (teselas de openstreetmap.org / openstreetmap.fr, geocodificación con Nominatim).</p>
   </aside>
@@ -887,8 +924,9 @@ function renderBubbles(vis){
 }
 function bubblePoints(){ const pts = []; bubbleLayer.eachLayer(m=>pts.push(m.getLatLng())); return pts.map(l=>[l.lat,l.lng]); }
 function updateLayers(){
-  [layer, bubbleLayer, evLayer].forEach(l=>{ if(map.hasLayer(l)) map.removeLayer(l); });
+  [layer, bubbleLayer, evLayer, parLayer].forEach(l=>{ if(map.hasLayer(l)) map.removeLayer(l); });
   if(activeTab==='events') map.addLayer(evLayer);
+  else if(activeTab==='parishes') map.addLayer(parLayer);
   else map.addLayer(state.view.prov ? layer : bubbleLayer);
 }
 
@@ -1320,11 +1358,13 @@ function selectEvent(id){
   if(m){ map.flyTo(m.getLatLng(), Math.max(map.getZoom(),12), {duration:.6}); setTimeout(()=>m.openPopup(), 650); if(window.innerWidth<=860) $('#map').scrollIntoView({behavior:'smooth'}); }
 }
 function setTab(name){
-  const events = name==='events';
-  $('#paneGroups').hidden = events; $('#paneEvents').hidden = !events;
+  if(!['groups','events','parishes'].includes(name)) name = 'groups';
+  $('#paneGroups').hidden = name!=='groups'; $('#paneEvents').hidden = name!=='events'; $('#paneParishes').hidden = name!=='parishes';
+  $('.panel > .foot').hidden = name==='parishes';   /* la nota de Charis no aplica a las parroquias */
   document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected', String(b.dataset.tab===name)));
   activeTab = name; updateLayers();
-  if(events){ const pts = visibleEvents().filter(e=>e.lat!=null).map(e=>[e.lat,e.lng]); if(pts.length) map.fitBounds(pts,{padding:[40,40], maxZoom:12}); }
+  if(name==='events'){ const pts = visibleEvents().filter(e=>e.lat!=null).map(e=>[e.lat,e.lng]); if(pts.length) map.fitBounds(pts,{padding:[40,40], maxZoom:12}); }
+  else if(name==='parishes') parOnView(true);
   else { fitNext = true; render(); }
   store.set('tab', name);
 }
@@ -1341,6 +1381,272 @@ $('#evOrg').addEventListener('click', e=>{
 $('#evList').addEventListener('click', e=>{ if(e.target.closest('a')) return; const it = e.target.closest('[data-ev]'); if(it) selectEvent(it.dataset.ev); });
 $('#evList').addEventListener('keydown', e=>{ if((e.key==='Enter'||e.key===' ') && e.target.dataset && e.target.dataset.ev){ e.preventDefault(); selectEvent(e.target.dataset.ev); } });
 $('#evLinks').innerHTML = EVENT_LINKS.map(([u,l])=>`<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(l)}</a></li>`).join('');
+
+/* ───────────────────────── Parroquias y misas (OpenStreetMap, en vivo) ───────────────────────── */
+const ISO = {almeria:'ES-AL', cadiz:'ES-CA', cordoba:'ES-CO', granada:'ES-GR', huelva:'ES-H', jaen:'ES-J', malaga:'ES-MA', sevilla:'ES-SE',
+  huesca:'ES-HU', teruel:'ES-TE', zaragoza:'ES-Z', asturias:'ES-O', baleares:'ES-PM', 'las-palmas':'ES-GC', 'santa-cruz-de-tenerife':'ES-TF',
+  cantabria:'ES-S', avila:'ES-AV', burgos:'ES-BU', leon:'ES-LE', palencia:'ES-P', salamanca:'ES-SA', segovia:'ES-SG', soria:'ES-SO',
+  valladolid:'ES-VA', zamora:'ES-ZA', albacete:'ES-AB', 'ciudad-real':'ES-CR', cuenca:'ES-CU', guadalajara:'ES-GU', toledo:'ES-TO',
+  barcelona:'ES-B', girona:'ES-GI', lleida:'ES-L', tarragona:'ES-T', alicante:'ES-A', castellon:'ES-CS', valencia:'ES-V',
+  badajoz:'ES-BA', caceres:'ES-CC', 'a-coruna':'ES-C', lugo:'ES-LU', ourense:'ES-OR', pontevedra:'ES-PO', madrid:'ES-M', murcia:'ES-MU',
+  navarra:'ES-NA', alava:'ES-VI', bizkaia:'ES-BI', gipuzkoa:'ES-SS', 'la-rioja':'ES-LO', ceuta:'ES-CE', melilla:'ES-ML'};
+const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://overpass.private.coffee/api/interpreter'];
+const PAR_TTL = 7*86400000, PAR_PAGE = 150, PAR_MIN_ZOOM = 11;
+const OSM_DAYS = {su:0, mo:1, tu:2, we:3, th:4, fr:5, sa:6};
+const DAY_ABBR = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const PAR_CHIPS = [['all','Todas'],['times','Con horario'],['today','Misa hoy'],['sun','Domingo']];
+const par = {key:null, prov:null, mode:'idle', items:[], err:'', filter:'all', q:'', shown:PAR_PAGE, selected:null, gen:0};
+const parRenderer = L.canvas({padding:.5});
+const parLayer = L.layerGroup();
+const parMarkers = new Map();
+
+/* Horario de misas en la sintaxis de OpenStreetMap («Mo-Fr 19:30; Su 10:00,12:00») → horas de inicio por día (0 = domingo).
+   Si alguna parte no se entiende (meses, semanas, festivos sueltos…), devuelve null y se muestra el texto tal cual. */
+function parseServiceTimes(raw){
+  if(!raw || /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|week|easter)\b|\[|"/i.test(raw)) return null;
+  const days = [[],[],[],[],[],[],[]]; let any = false;
+  for(const part of raw.split(';')){
+    const rule = part.trim(); if(!rule) continue;
+    if(/\b(off|closed)\b/i.test(rule)) continue;
+    const m = rule.match(/^((?:(?:mo|tu|we|th|fr|sa|su|ph)(?:\s*-\s*(?:mo|tu|we|th|fr|sa|su))?\s*,?\s*)+)\s*(.*)$/i);
+    const dayPart = m ? m[1] : '', timePart = m ? m[2] : rule;
+    const times = [];
+    const tre = /(\d{1,2}):(\d{2})(?:\s*-\s*\d{1,2}:\d{2})?/g; let t;
+    while((t = tre.exec(timePart))) times.push(+t[1]*60 + +t[2]);
+    if(!times.length || timePart.replace(tre,'').replace(/[\s,]/g,'')) return null;
+    let list = [];
+    if(!dayPart) list = [0,1,2,3,4,5,6];
+    else for(const d of dayPart.toLowerCase().split(',').map(s=>s.trim()).filter(Boolean)){
+      if(d==='ph') continue;
+      const r = d.split('-').map(s=>OSM_DAYS[s.trim()]);
+      if(r.some(x=>x==null)) return null;
+      if(r.length===1) list.push(r[0]);
+      else { for(let k=r[0], n=0; n<7; k=(k+1)%7, n++){ list.push(k); if(k===r[1]) break; } }
+    }
+    list.forEach(d=>{ days[d] = [...new Set(days[d].concat(times))].sort((a,b)=>a-b); });
+    if(list.length) any = true;
+  }
+  return any ? days : null;
+}
+const hhmm = m => Math.floor(m/60)+':'+String(m%60).padStart(2,'0');
+/* «Lun–Vie 19:30 · Sáb 19:00 · Dom 10:00, 12:00» (agrupando días seguidos con las mismas horas, de lunes a domingo) */
+function fmtTimes(days){
+  const order = [1,2,3,4,5,6,0], out = [];
+  for(let i=0; i<order.length; ){
+    const d = order[i], key = days[d].join(',');
+    let j = i; while(j+1<order.length && days[order[j+1]].join(',')===key) j++;
+    if(key) out.push((j>i ? DAY_ABBR[d]+(j>i+1?'–':', ')+DAY_ABBR[order[j]] : DAY_ABBR[d])+' '+days[d].map(hhmm).join(', '));
+    i = j+1;
+  }
+  return out.join(' · ');
+}
+function nextMass(days, now){
+  const cur = now.getHours()*60+now.getMinutes();
+  for(let k=0; k<7; k++){
+    const d = (now.getDay()+k)%7, t = days[d].find(x=>k>0 || x>=cur-10);
+    if(t!=null) return (k===0 ? 'hoy' : k===1 ? 'mañana' : DAY_ABBR[d].toLowerCase())+' '+hhmm(t);
+  }
+  return '';
+}
+
+function parFromOsm(el){
+  const t = el.tags || {}, c = el.center || el;
+  if(c.lat==null || !t.name) return null;
+  const street = t['addr:street'] ? t['addr:street']+(t['addr:housenumber']?', '+t['addr:housenumber']:'') : '';
+  const city = t['addr:city'] || t['addr:municipality'] || t['addr:place'] || '';
+  const raw = t.service_times || t['service_times:mass'] || '';
+  return {id:el.type[0]+el.id, name:t.name, lat:+c.lat.toFixed(6), lng:+c.lon.toFixed(6), addr:street, city,
+    web:safeHref(t.website||t['contact:website']||t.url||''), phone:t.phone||t['contact:phone']||'', raw};
+}
+/* Iglesias católicas (o sin confesión indicada, que en España casi siempre lo son) de una provincia (código ISO) o de una caja s,o,n,e */
+function parQuery(where){
+  const scope = where.iso ? '(area.a)' : '('+where.bbox.join(',')+')';
+  const sel = d => `nwr["amenity"="place_of_worship"]["religion"="christian"]${d}["name"]${scope};`;
+  return '[out:json][timeout:60];' + (where.iso ? `area["ISO3166-2"="${where.iso}"]->.a;` : '')
+    + '(' + sel('["denomination"~"^(catholic|roman_catholic)$"]') + sel('[!"denomination"]') + ');out center tags;';
+}
+async function overpass(q){
+  let last;
+  for(const url of OVERPASS){
+    try{
+      const r = await fetchTimeout(url, 70000, {method:'POST', body:'data='+encodeURIComponent(q), headers:{'Content-Type':'application/x-www-form-urlencoded'}});
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      const j = await r.json();
+      return (j.elements||[]).map(parFromOsm).filter(Boolean);
+    }catch(e){ last = e; }
+  }
+  throw last || new Error('sin respuesta');
+}
+function boxOfBounds(b){ return [b.getSouth(), b.getWest(), b.getNorth(), b.getEast()].map(x=>+x.toFixed(4)); }
+async function loadParishes(where, opts){
+  const my = ++par.gen, key = where.prov ? 'prov:'+where.prov : 'zona';
+  const cached = where.prov ? store.get('par:v1:'+where.prov, null) : null;
+  par.key = key; par.prov = where.prov || null; par.shown = PAR_PAGE; par.selected = null; par.err = '';
+  if(cached && Date.now()-cached.t < PAR_TTL && !(opts && opts.force)){
+    par.items = cached.items; par.mode = 'ready'; par.fetchedAt = cached.t; parSync(true); return;
+  }
+  par.items = []; par.mode = 'loading'; parSync(false);
+  try{
+    let items;
+    if(where.prov){
+      items = await overpass(parQuery({iso:ISO[where.prov]}));
+      if(!items.length){ const [w,n,e,s] = boxOf(where.prov); items = await overpass(parQuery({bbox:[s,w,n,e]})); }  /* respaldo: caja aproximada de la provincia */
+    } else items = await overpass(parQuery({bbox:where.bbox}));
+    if(my!==par.gen) return;
+    const seen = new Set(); items = items.filter(p=>!seen.has(p.id) && seen.add(p.id));
+    par.items = items; par.mode = 'ready'; par.fetchedAt = Date.now();
+    if(where.prov) store.set('par:v1:'+where.prov, {t:par.fetchedAt, items});
+    parSync(!(opts && opts.keepView));
+  }catch(e){
+    if(my!==par.gen) return;
+    par.mode = 'error'; par.err = e && e.message || ''; parSync(false);
+  }
+}
+/* Al abrir la pestaña o cambiar de provincia */
+function parOnView(fit){
+  const p = state.view.prov;
+  if(p){ if(par.key!=='prov:'+p || par.mode==='error') loadParishes({prov:p}); else parSync(fit); }
+  else if(par.key==='zona') parSync(false);
+  else { par.key = null; par.items = []; par.mode = 'idle'; parSync(false); if(fit){ const sp = scopeProvs().map(x=>x.c); if(sp.length) map.fitBounds(sp,{padding:[30,30], maxZoom:8}); } }
+}
+
+function parPrepare(p){
+  if(p.days===undefined) p.days = parseServiceTimes(p.raw);
+  return p;
+}
+function parMarkerStyle(p, sel){
+  const has = !!p.raw, c = cssVar('--accent') || '#9b2335';
+  return {renderer:parRenderer, radius: sel ? 9 : 5.5, weight: sel ? 3 : 1.5, color: has ? '#ffffff' : (cssVar('--off')||'#8a857c'),
+    fillColor: has ? c : (cssVar('--panel')||'#fff'), fillOpacity: has ? .95 : .9, opacity:1};
+}
+function parLinks(p){
+  const place = p.city || (par.prov ? PROV[par.prov].name : '');
+  const maps = 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(p.lat+','+p.lng);
+  const find = 'https://www.google.com/search?q='+encodeURIComponent('horario misas "'+p.name+'" '+place);
+  const osm = 'https://www.openstreetmap.org/'+({n:'node',w:'way',r:'relation'}[p.id[0]])+'/'+p.id.slice(1);
+  return [`<a href="${esc(maps)}" target="_blank" rel="noopener">Cómo llegar</a>`,
+    p.web ? `<a href="${esc(p.web)}" target="_blank" rel="noopener">Web</a>` : '',
+    p.raw ? '' : `<a href="${esc(find)}" target="_blank" rel="noopener">Buscar horario de misas</a>`,
+    `<a href="${esc(osm)}" target="_blank" rel="noopener">Corregir en OpenStreetMap</a>`].filter(Boolean).join('');
+}
+function parTimesHtml(p, now){
+  if(!p.raw) return '<span class="raw">Sin horario en OpenStreetMap</span>';
+  if(!p.days) return `<span class="raw">Misas: ${esc(p.raw)}</span>`;
+  const nx = nextMass(p.days, now);
+  return `${nx?`<span class="next ${nx.startsWith('hoy')?'today':''}">Próxima misa: ${esc(nx)}</span> · `:''}<span>${esc(fmtTimes(p.days))}</span>`;
+}
+function parPopup(p){
+  const now = new Date();
+  return `<div class="pop"><h3>${esc(p.name)}</h3>
+    <p class="ptimes">${parTimesHtml(p, now)}</p>
+    ${p.addr||p.city?`<p class="muted">${esc([p.addr,p.city].filter(Boolean).join(' · '))}</p>`:''}
+    ${p.phone?`<p class="muted">Tel. <a href="tel:${esc(p.phone.replace(/[^\d+]/g,''))}">${esc(p.phone)}</a></p>`:''}
+    <div class="links">${parLinks(p)}</div></div>`;
+}
+/* Crea o quita marcadores según los datos cargados; si fit, encuadra el mapa */
+function parSync(fit){
+  const keep = new Set(par.items.map(p=>p.id));
+  parMarkers.forEach((m,id)=>{ if(!keep.has(id)){ parLayer.removeLayer(m); parMarkers.delete(id); } });
+  par.items.forEach(p=>{
+    parPrepare(p);
+    if(parMarkers.has(p.id)) return;
+    const m = L.circleMarker([p.lat,p.lng], parMarkerStyle(p,false));
+    m.bindPopup(()=>parPopup(p), {maxWidth:300, autoPanPadding:[20,20]});
+    m.bindTooltip(p.name, {direction:'top', offset:[0,-6]});
+    m.on('click', ()=>parSelect(p.id,false));
+    parMarkers.set(p.id, m); parLayer.addLayer(m);
+  });
+  if(fit && activeTab==='parishes' && par.items.length){
+    if(!parFitNear()) map.fitBounds(par.items.map(p=>[p.lat,p.lng]), {padding:[30,30], maxZoom:15});
+  }
+  renderParishes();
+}
+/* Si sabemos dónde estás y es dentro de la zona cargada: encuadra tu posición y las 5 parroquias más cercanas */
+function parFitNear(){
+  if(!state.you || !par.items.length || !L.latLngBounds(par.items.map(p=>[p.lat,p.lng])).pad(.05).contains(state.you)) return false;
+  const near = par.items.slice().sort((a,b)=>km(state.you,[a.lat,a.lng])-km(state.you,[b.lat,b.lng])).slice(0,5).map(p=>[p.lat,p.lng]);
+  map.fitBounds([state.you, ...near], {padding:[40,40], maxZoom:16});
+  return true;
+}
+function parVisible(){
+  const q = norm(par.q), now = new Date(), today = now.getDay(), b = map.getBounds();
+  let out = par.items.filter(p=>{
+    if(par.filter==='times' && !p.raw) return false;
+    if(par.filter==='today' && !(p.days && p.days[today].length)) return false;
+    if(par.filter==='sun' && !(p.days && p.days[0].length)) return false;
+    if(q && !norm([p.name,p.addr,p.city].join(' ')).includes(q)) return false;
+    return true;
+  });
+  const inView = out.filter(p=>b.contains([p.lat,p.lng]));
+  out.forEach(p=>{ p.dist = state.you ? km(state.you,[p.lat,p.lng]) : null; });
+  const rank = p => p.days ? 0 : p.raw ? 1 : 2;   /* primero las que tienen horario claro */
+  const sorter = state.you ? (a,b)=>a.dist-b.dist : (a,b)=>(rank(a)-rank(b)) || a.name.localeCompare(b.name,'es');
+  return {all:out, view:inView.sort(sorter)};
+}
+function renderParishes(){
+  $('#parChips').innerHTML = PAR_CHIPS.map(([k,l])=>`<button class="chip" type="button" data-pf="${k}" aria-pressed="${par.filter===k}">${l}</button>`).join('');
+  const area = $('#parArea'), z = map.getZoom();
+  area.disabled = z < PAR_MIN_ZOOM || par.mode==='loading';
+  area.title = z < PAR_MIN_ZOOM ? 'Acércate en el mapa para buscar en la zona que ves' : 'Buscar parroquias en la zona que ves en el mapa';
+  $('#parRetry').hidden = par.mode!=='error';
+  const st = $('#parStatus'), list = $('#parList'), now = new Date();
+  const where = par.key==='zona' ? 'esta zona' : par.prov ? PROV[par.prov].name : '';
+  if(par.mode==='idle'){
+    st.textContent = '';
+    $('#parCount').textContent = '';
+    list.innerHTML = `<li class="empty">Elige una provincia arriba, o acércate en el mapa y pulsa «Buscar en esta zona del mapa».<br>Hay miles de parroquias en España: se consultan por provincia.</li>`;
+    parLayer.eachLayer(m=>m.setStyle(parMarkerStyle({raw:''},false)));
+    return;
+  }
+  if(par.mode==='loading'){ st.textContent = 'Consultando OpenStreetMap…'; list.innerHTML = '<li class="empty">Cargando parroquias de '+esc(where)+'… La primera vez puede tardar unos segundos.</li>'; return; }
+  if(par.mode==='error'){ st.textContent = 'No se ha podido consultar OpenStreetMap.'; list.innerHTML = '<li class="empty">Los servidores de OpenStreetMap no responden ahora mismo. Prueba de nuevo en un rato con «Reintentar».</li>'; return; }
+  const {all, view} = parVisible();
+  const withTimes = par.items.filter(p=>p.raw).length;
+  $('#parCount').textContent = par.items.length ? String(par.items.length) : '';
+  st.textContent = `${par.items.length.toLocaleString('es-ES')} en ${where} · ${withTimes.toLocaleString('es-ES')} con horario · ${view.length.toLocaleString('es-ES')} en el mapa`;
+  const ids = new Set(all.map(p=>p.id));
+  parMarkers.forEach((m,id)=>{ const on = ids.has(id); if(on && !parLayer.hasLayer(m)) parLayer.addLayer(m); if(!on && parLayer.hasLayer(m)) parLayer.removeLayer(m); });
+  if(!par.items.length){ list.innerHTML = '<li class="empty">OpenStreetMap no tiene parroquias en esta zona.</li>'; return; }
+  if(!view.length){ list.innerHTML = `<li class="empty">${all.length ? 'Ninguna parroquia de la zona del mapa coincide. Mueve o aleja el mapa.' : 'Ninguna parroquia coincide con estos filtros.'}</li>`; return; }
+  list.innerHTML = view.slice(0, par.shown).map(p=>{
+    const dist = p.dist!=null ? `<span>${p.dist<10?p.dist.toFixed(1).replace('.',','):Math.round(p.dist)} km</span>` : '';
+    return `<li class="item par ${p.raw?'':'no-times'} ${par.selected===p.id?'sel':''}" data-par="${esc(p.id)}" tabindex="0" role="button" style="--c:var(--accent)">
+      <span class="sw" aria-hidden="true"></span>
+      <div>
+        <h3>${esc(p.name)}</h3>
+        <div class="times">${parTimesHtml(p, now)}</div>
+        ${p.addr||p.city?`<div class="where">${esc([p.addr,p.city].filter(Boolean).join(' · '))}</div>`:''}
+        <div class="meta">${dist}${parLinks(p)}</div>
+      </div></li>`;
+  }).join('') + (view.length>par.shown ? `<li><button class="btn more" type="button" id="parMore">Mostrar más (${(view.length-par.shown).toLocaleString('es-ES')})</button></li>` : '');
+}
+function parSelect(id, fromList){
+  par.selected = id;
+  parMarkers.forEach((m,k)=>m.setStyle(parMarkerStyle(par.items.find(p=>p.id===k)||{raw:''}, k===id)));
+  document.querySelectorAll('#parList .item.sel').forEach(el=>el.classList.remove('sel'));
+  const el = document.querySelector(`#parList [data-par="${CSS.escape(id)}"]`);
+  if(el){ el.classList.add('sel'); if(!fromList) el.scrollIntoView({block:'nearest', behavior:'smooth'}); }
+  const m = parMarkers.get(id);
+  if(m && fromList){
+    map.flyTo(m.getLatLng(), Math.max(map.getZoom(),16), {duration:.6});
+    setTimeout(()=>m.openPopup(), 650);
+    if(window.innerWidth<=860) $('#map').scrollIntoView({behavior:'smooth'});
+  }
+}
+let parMoveT;
+map.on('moveend', ()=>{ if(activeTab!=='parishes') return; clearTimeout(parMoveT); parMoveT = setTimeout(renderParishes, 250); });
+$('#parChips').addEventListener('click', e=>{ const b = e.target.closest('[data-pf]'); if(!b) return; par.filter = b.dataset.pf; par.shown = PAR_PAGE; renderParishes(); });
+let parQT;
+$('#parQ').addEventListener('input', e=>{ clearTimeout(parQT); parQT = setTimeout(()=>{ par.q = e.target.value; par.shown = PAR_PAGE; renderParishes(); }, 150); });
+$('#parList').addEventListener('click', e=>{
+  if(e.target.closest('#parMore')){ par.shown += PAR_PAGE; renderParishes(); return; }
+  if(e.target.closest('a')) return;
+  const it = e.target.closest('[data-par]'); if(it) parSelect(it.dataset.par, true);
+});
+$('#parList').addEventListener('keydown', e=>{ if((e.key==='Enter'||e.key===' ') && e.target.dataset && e.target.dataset.par){ e.preventDefault(); parSelect(e.target.dataset.par, true); } });
+$('#parArea').addEventListener('click', ()=>{ if(map.getZoom() >= PAR_MIN_ZOOM) loadParishes({bbox:boxOfBounds(map.getBounds())}, {keepView:true}); });
+$('#parRetry').addEventListener('click', ()=>{ if(par.prov) loadParishes({prov:par.prov}, {force:true}); else if(map.getZoom() >= PAR_MIN_ZOOM) loadParishes({bbox:boxOfBounds(map.getBounds())}, {keepView:true}); });
+map.on('zoomend', ()=>{ if(activeTab==='parishes') $('#parArea').disabled = map.getZoom() < PAR_MIN_ZOOM || par.mode==='loading'; });
 
 /* ───────────────────────── Carga ───────────────────────── */
 /* ───────────────────────── Datos por provincia ───────────────────────── */
@@ -1412,6 +1718,7 @@ function setView(ccaa, prov, opts){
   geoGen++; $('#geoStatus').textContent = '';
   fitNext = true;
   buildControls(); updateLayers(); render(); setStatus(); renderEvents();
+  if(activeTab==='parishes') parOnView(true);
   if(prov) loadOne(prov, false);
 }
 function viewFromHash(){
@@ -1520,9 +1827,9 @@ $('#sort').addEventListener('change', e=>{ state.sort = e.target.value; render()
 $('#list').addEventListener('click', e=>{ const it = e.target.closest('.item'); if(it) select(it.dataset.id, true); });
 $('#list').addEventListener('keydown', e=>{ if((e.key==='Enter'||e.key===' ') && e.target.classList.contains('item')){ e.preventDefault(); select(e.target.dataset.id, true); } });
 $('#refresh').addEventListener('click', ()=>{ refreshScope(true); loadEvents(); });
-$('#near').addEventListener('click', ()=>{
-  const btn = $('#near');
-  if(!navigator.geolocation){ btn.textContent = 'Ubicación no disponible'; return; }
+/* Pide la ubicación, la marca en el mapa y abre la provincia más cercana si no hay ninguna elegida */
+function locate(btn, done){
+  if(!navigator.geolocation){ btn.lastChild.textContent = 'Ubicación no disponible'; return; }
   btn.disabled = true;
   navigator.geolocation.getCurrentPosition(pos=>{
     state.you = [pos.coords.latitude, pos.coords.longitude];
@@ -1531,12 +1838,16 @@ $('#near').addEventListener('click', ()=>{
     youMarker = L.marker(state.you, {icon:L.divIcon({className:'', html:'<div class="you"></div>', iconSize:[14,14]}), title:'Tu ubicación', zIndexOffset:1000}).addTo(map);
     const opt = $('#sort option[value="dist"]'); opt.disabled = false;
     $('#sort').value = 'dist'; state.sort = 'dist';
-    render();
-    const vis = visibleGroups().filter(g=>g.dist!=null).slice(0,4).map(g=>[g.lat,g.lng]);
-    map.fitBounds([state.you, ...vis], {padding:[40,40], maxZoom:15});
     btn.disabled = false;
+    done();
   }, ()=>{ btn.disabled = false; btn.lastChild.textContent = 'Permiso denegado'; setTimeout(()=>btn.lastChild.textContent='Cerca de mí', 2500); }, {enableHighAccuracy:false, timeout:10000, maximumAge:300000});
-});
+}
+$('#near').addEventListener('click', ()=>locate($('#near'), ()=>{
+  render();
+  const vis = visibleGroups().filter(g=>g.dist!=null).slice(0,4).map(g=>[g.lat,g.lng]);
+  map.fitBounds([state.you, ...vis], {padding:[40,40], maxZoom:15});
+}));
+$('#parNear').addEventListener('click', ()=>locate($('#parNear'), ()=>{ if(!parFitNear()) map.setView(state.you, 15); renderParishes(); }));
 /* Recalcular «Hoy / Mañana» cada minuto si la página queda abierta */
 setInterval(()=>{ if(state.groups.length) render(); }, 60000);
 
@@ -1549,7 +1860,7 @@ rebuildGroups(); updateLayers(); setStatus();
 setTiles();
 refreshScope(false);
 loadEvents();
-if(store.get('tab','groups')==='events') setTab('events');
+{ const t0 = store.get('tab','groups'); if(t0!=='groups') setTab(t0); }
 })();
 </script>
 </body>
