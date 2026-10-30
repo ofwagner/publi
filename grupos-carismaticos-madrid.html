@@ -1522,11 +1522,13 @@ function parMarkerStyle(p, sel){
 function parLinks(p){
   const place = p.city || (par.prov ? PROV[par.prov].name : '');
   const maps = 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(p.lat+','+p.lng);
-  const find = 'https://www.google.com/search?q='+encodeURIComponent('horario misas "'+p.name+'" '+place);
+  const find = 'https://www.google.com/search?q='+encodeURIComponent('site:misas.org '+p.name+' '+place);   /* suele llevar a su ficha de misas.org */
+  const findWeb = 'https://www.google.com/search?q='+encodeURIComponent('horario misas "'+p.name+'" '+place);
   const osm = 'https://www.openstreetmap.org/'+({n:'node',w:'way',r:'relation'}[p.id[0]])+'/'+p.id.slice(1);
   return [`<a href="${esc(maps)}" target="_blank" rel="noopener">Cómo llegar</a>`,
     p.web ? `<a href="${esc(p.web)}" target="_blank" rel="noopener">Web</a>` : '',
-    p.raw ? '' : `<a href="${esc(find)}" target="_blank" rel="noopener">Buscar horario de misas</a>`,
+    p.raw ? '' : `<a href="${esc(find)}" target="_blank" rel="noopener">Horario en misas.org</a>`,
+    p.raw ? '' : `<a href="${esc(findWeb)}" target="_blank" rel="noopener">Buscar en Google</a>`,
     `<a href="${esc(osm)}" target="_blank" rel="noopener">Corregir en OpenStreetMap</a>`].filter(Boolean).join('');
 }
 function parTimesHtml(p, now){
