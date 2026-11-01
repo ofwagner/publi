@@ -137,6 +137,12 @@ h2{font:700 clamp(30px,4.4vw,42px)/1.1 var(--serif);margin:0 0 22px;letter-spaci
 .bio-link a:hover{color:var(--cris)}
 .bio-link a:focus-visible{outline:3px solid var(--otto);outline-offset:3px}
 
+/* Novedades (desde la hoja de Google «Cris y Otto · Novedades») */
+.nov-list{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.nov-list li{background:var(--paper);border-radius:16px;padding:16px 20px;box-shadow:var(--shadow);border-left:5px solid var(--otto);white-space:pre-line;overflow-wrap:anywhere}
+.nov-list li:first-child{border-left-color:var(--cris)}
+.nov-list a{color:var(--otto);font-weight:600}
+
 /* Escúchanos */
 .listen{display:flex;gap:24px;align-items:center;background:var(--paper);border-radius:22px;padding:26px;box-shadow:var(--shadow);border-left:5px solid var(--cris);border-right:5px solid var(--otto)}
 .listen-icon{flex:none;width:84px;height:84px;border-radius:50%;background:var(--bg);display:grid;place-items:center}
@@ -339,6 +345,11 @@ footer small{color:var(--muted)}
     </svg>
     <p><b>Dos estilos</b>, <i>un solo centro</i>: <strong>Dios</strong></p>
   </div>
+
+  <section class="section wrap novedades" id="novedades" aria-labelledby="novedades-t" hidden>
+    <h2 id="novedades-t">Novedades</h2>
+    <ul class="nov-list" id="novList"></ul>
+  </section>
 
   <section class="section wrap" aria-labelledby="quienes">
     <h2 id="quienes">Quiénes somos</h2>
@@ -593,6 +604,56 @@ if(window.parent !== window){
   document.getElementById('listenBtn').addEventListener('click', open);
   document.getElementById('playerMin').addEventListener('click', minimize);
   document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && !player.classList.contains('min')) minimize(); });
+})();
+</script>
+
+<script>
+/* Novedades: se leen de la hoja pública «Cris y Otto · Novedades» (una columna, la fila de arriba es la más reciente) */
+(function(){
+  var SHEET_ID = '1UqPX6MCchNnx_dj8xAaglvdcRQ1_KX62ynk1IY0utlo', MAX = 3, KEY = 'cyo-novedades';
+  var sec = document.getElementById('novedades'), list = document.getElementById('novList');
+  var escH = function(s){ return s.replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+  function csv(t){   /* CSV con comillas, comas y saltos de línea dentro de las celdas */
+    var rows = [], row = [], cell = '', q = false;
+    for(var i=0; i<t.length; i++){
+      var c = t[i];
+      if(q){ if(c==='"'){ if(t[i+1]==='"'){ cell+='"'; i++; } else q = false; } else cell += c; }
+      else if(c==='"') q = true;
+      else if(c===','){ row.push(cell); cell=''; }
+      else if(c==='\n' || c==='\r'){ if(c==='\r' && t[i+1]==='\n') i++; row.push(cell); rows.push(row); row=[]; cell=''; }
+      else cell += c;
+    }
+    if(cell || row.length){ row.push(cell); rows.push(row); }
+    return rows;
+  }
+  /* Texto → HTML: las direcciones http(s):// y www. se convierten en enlaces; todo lo demás se escapa */
+  function linkify(s){
+    var re = /(?:https?:\/\/|www\.)[^\s<>"']*[^\s<>"'.,;:!?)»]/g, out = '', last = 0, m;
+    while((m = re.exec(s))){
+      var u = m[0];
+      out += escH(s.slice(last, m.index)) + '<a href="' + escH(/^www\./i.test(u) ? 'https://' + u : u) + '" target="_blank" rel="noopener">' + escH(u) + '</a>';
+      last = re.lastIndex;
+    }
+    return out + escH(s.slice(last));
+  }
+  function show(items){
+    if(!items || !items.length){ sec.hidden = true; return; }
+    list.innerHTML = items.map(function(t){ return '<li>' + linkify(t) + '</li>'; }).join('');
+    sec.hidden = false;
+  }
+  try{ show(JSON.parse(localStorage.getItem(KEY) || 'null')); }catch(e){}
+  if(!window.fetch) return;
+  fetch('https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&_=' + Math.floor(Date.now()/300000), {credentials:'omit'})
+    .then(function(r){ if(!r.ok) throw new Error(r.status); return r.text(); })
+    .then(function(t){
+      if(/^\s*</.test(t)) throw new Error('no es CSV');   /* hoja sin compartir: Google devuelve una página de acceso */
+      var items = csv(t).map(function(r){ return (r[0] || '').trim(); }).filter(Boolean);
+      if(items.length && /^novedad(es)?$/i.test(items[0])) items.shift();   /* cabecera */
+      items = items.slice(0, MAX);
+      show(items);
+      try{ localStorage.setItem(KEY, JSON.stringify(items)); }catch(e){}
+    })
+    .catch(function(){ /* sin red o hoja privada: se queda lo guardado, o la sección oculta */ });
 })();
 </script>
 
