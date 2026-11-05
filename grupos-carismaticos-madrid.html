@@ -6,48 +6,50 @@
 <title>Grupos carismáticos · España</title>
 <meta name="description" content="Mapa interactivo de los grupos de oración carismáticos de España por provincias y comunidades, con datos de Charis España actualizados al abrir, adoraciones, misas de familias y agenda de eventos.">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#f5f3ee; --panel:#ffffff; --ink:#1d1b18; --muted:#6c675f; --line:#e5e1d8;
-  --chip:#efece5; --chip-on:#1d1b18; --chip-on-ink:#ffffff;
-  --accent:#9b2335; --accent-soft:#f6e6e8;
-  --c-rcce:#2563eb; --c-rccee:#c2410c; --c-com:#7c3aed; --c-ado:#0f766e; --c-fam:#be185d;
+  /* Paleta y tipografía de la web de Cris y Otto */
+  --bg:#f6efe4; --panel:#fffaf2; --ink:#2a2420; --muted:#6e645b; --line:#e6dccd;
+  --chip:#efe4d4; --chip-on:#2a2420; --chip-on-ink:#fffaf2;
+  --accent:#c8551f; --accent-soft:#fbe5d7; --accent2:#3557b7;
+  --c-rcce:#3557b7; --c-rccee:#c8551f; --c-com:#7c3aed; --c-ado:#0f766e; --c-fam:#be185d;
   --ok:#15803d; --warn:#b45309; --off:#8a857c;
-  --shadow:0 1px 2px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.06);
-  --radius:12px;
+  --shadow:0 1px 2px rgba(60,40,20,.06),0 8px 24px rgba(60,40,20,.08);
+  --radius:16px;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,"Times New Roman",serif;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#131211; --panel:#1c1b19; --ink:#eeebe4; --muted:#a39e94; --line:#2f2d29;
-    --chip:#262421; --chip-on:#eeebe4; --chip-on-ink:#131211;
-    --accent:#e57c8b; --accent-soft:#3a2226;
-    --c-rcce:#60a5fa; --c-rccee:#fb923c; --c-com:#a78bfa; --c-ado:#2dd4bf; --c-fam:#f472b6;
+    --bg:#17130f; --panel:#211b16; --ink:#f1e9df; --muted:#b3a698; --line:#352c24;
+    --chip:#2c241d; --chip-on:#f1e9df; --chip-on-ink:#17130f;
+    --accent:#f08a52; --accent-soft:#3b2418; --accent2:#8ea8ff;
+    --c-rcce:#8ea8ff; --c-rccee:#f08a52; --c-com:#a78bfa; --c-ado:#2dd4bf; --c-fam:#f472b6;
     --ok:#4ade80; --warn:#fbbf24; --off:#8a857c;
     --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.35);
   }
 }
 :root[data-theme="dark"]{
-  --bg:#131211; --panel:#1c1b19; --ink:#eeebe4; --muted:#a39e94; --line:#2f2d29;
-  --chip:#262421; --chip-on:#eeebe4; --chip-on-ink:#131211;
-  --accent:#e57c8b; --accent-soft:#3a2226;
-  --c-rcce:#60a5fa; --c-rccee:#fb923c; --c-com:#a78bfa; --c-ado:#2dd4bf; --c-fam:#f472b6;
+  --bg:#17130f; --panel:#211b16; --ink:#f1e9df; --muted:#b3a698; --line:#352c24;
+  --chip:#2c241d; --chip-on:#f1e9df; --chip-on-ink:#17130f;
+  --accent:#f08a52; --accent-soft:#3b2418; --accent2:#8ea8ff;
+  --c-rcce:#8ea8ff; --c-rccee:#f08a52; --c-com:#a78bfa; --c-ado:#2dd4bf; --c-fam:#f472b6;
   --ok:#4ade80; --warn:#fbbf24; --off:#8a857c;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.35);
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
 body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--sans);-webkit-font-smoothing:antialiased}
-a{color:var(--accent)}
+a{color:var(--accent2)}
 button,input,select{font:inherit;color:inherit}
 
 /* Cabecera */
 .top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:14px 20px;border-bottom:1px solid var(--line);background:var(--panel)}
-.brand h1{font:700 22px/1.15 var(--serif);margin:0;letter-spacing:-.01em}
+.brand h1{font:700 24px/1.15 var(--serif);margin:0;letter-spacing:-.01em}
+.top{border-bottom:3px solid transparent;border-image:linear-gradient(90deg,#c8551f,#3557b7) 1}
+/* Dentro de la web de Cris y Otto (pestaña «Buscador») la cabecera se reduce: ya hay título fuera */
+.embedded .top{padding:8px 16px} .embedded .brand{display:none} .embedded .status{justify-content:flex-start} .embedded #statusText{text-align:left}
+.embedded .layout{height:calc(100vh - 54px);height:calc(100dvh - 54px)}
 .brand .sub{margin:3px 0 0;color:var(--muted);font-size:13.5px}
 .brand .sub a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .status{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);min-width:0;flex:1 1 320px;justify-content:flex-end;flex-wrap:wrap}
@@ -109,10 +111,11 @@ button,input,select{font:inherit;color:inherit}
 .foot{margin:0;padding:8px 16px 14px;font-size:11.5px;color:var(--muted)}
 
 /* Pestañas y eventos */
-.tabs{display:flex;gap:4px;padding:6px 12px 0;border-bottom:1px solid var(--line)}
-.tab{border:0;background:none;padding:8px 10px;font-size:14px;font-weight:650;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--line)}
+.tab{border:0;background:none;padding:7px 13px;font-size:14px;font-weight:650;color:var(--muted);cursor:pointer;border-radius:999px}
 .tab:hover{color:var(--ink)}
-.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.tab:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
 .tab .n{font-weight:500;font-size:12px;opacity:.7}
 .pane{display:flex;flex-direction:column;flex:1 1 auto;min-height:0}
 .pane[hidden]{display:none}
@@ -140,7 +143,7 @@ button,input,select{font:inherit;color:inherit}
 .pop .ptimes{margin:0 0 7px;font-size:13px}
 .pop .links{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12.5px;margin-top:8px}
 /* Burbujas de provincia en la vista de España */
-.bub{display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--accent);color:#fff;font:700 12.5px/1 var(--sans);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);cursor:pointer}
+.bub{display:flex;align-items:center;justify-content:center;border-radius:50%;background:linear-gradient(135deg,#c8551f,#3557b7);color:#fff;font:700 12.5px/1 var(--sans);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);cursor:pointer}
 .bub.wait{background:var(--off)}
 .row select[hidden]{display:none}
 
@@ -175,6 +178,7 @@ button,input,select{font:inherit;color:inherit}
 </style>
 </head>
 <body>
+<script>if(window.self !== window.top) document.documentElement.classList.add('embedded');</script>
 <header class="top">
   <div class="brand">
     <h1>Grupos de oración carismáticos</h1>

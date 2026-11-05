@@ -192,6 +192,15 @@ h2{font:700 clamp(30px,4.4vw,42px)/1.1 var(--serif);margin:0 0 22px;letter-spaci
 .btn.more{border-color:var(--ink)}
 @media (max-width:600px){ .teaser{grid-template-columns:1fr 1fr} .teaser .tz:first-child{grid-row:span 2;aspect-ratio:auto} .tz{aspect-ratio:1} }
 
+/* Buscador (carga grupos-carismaticos-madrid.html en un marco) */
+.finder-view{padding-top:22px}
+.finder-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px 20px;flex-wrap:wrap;margin-bottom:16px}
+.finder-head p{margin:0;color:var(--muted)}
+.finder-view iframe{display:block;width:100%;height:calc(100vh - 56px);height:calc(100dvh - 56px);border:0;border-top:1px solid var(--line);background:var(--bg)}
+.tab,.brand{white-space:nowrap}
+@media (max-width:440px){ .tabs{gap:2px} .tab{padding:6px 8px;font-size:13.5px} .tab .count{display:none} .topnav-in{gap:6px} .brand{font-size:17px} .finder-head .btn{font-size:14px;padding:8px 14px} }
+@media (max-width:350px){ .brand i{display:none} .tab{padding:6px 6px;font-size:13px} }
+
 /* Vista de galería */
 .gallery-view{padding-top:26px;padding-bottom:20px}
 .gal-title{font:700 clamp(40px,7vw,64px)/1 var(--serif);margin:0 0 6px}
@@ -300,6 +309,7 @@ footer small{color:var(--muted)}
       <a class="tab" role="tab" id="tab-inicio" href="#inicio" aria-controls="inicio" aria-selected="true">Inicio</a>
       <a class="tab" role="tab" id="tab-bio" href="#bio" aria-controls="bio" aria-selected="false">Bio</a>
       <a class="tab" role="tab" id="tab-galeria" href="#galeria" aria-controls="galeria" aria-selected="false">Galería <span class="count" id="galCount"></span></a>
+      <a class="tab" role="tab" id="tab-buscador" href="#buscador" aria-controls="buscador" aria-selected="false">Buscador</a>
     </div>
   </div>
 </nav>
@@ -537,6 +547,17 @@ footer small{color:var(--muted)}
   <button type="button" class="lb-nav lb-next" id="lbNext" aria-label="Foto siguiente">›</button>
 </dialog>
 
+<section id="buscador" class="finder-view" role="tabpanel" aria-labelledby="tab-buscador" hidden>
+  <div class="wrap finder-head">
+    <div>
+      <h1 class="gal-title">Buscador</h1>
+      <p>Grupos de oración, adoraciones, eventos y parroquias con horarios de misa en toda España.</p>
+    </div>
+    <a class="btn more" href="grupos-carismaticos-madrid.html" target="_blank" rel="noopener">Abrir a pantalla completa ↗</a>
+  </div>
+  <iframe id="finderFrame" title="Buscador de grupos de oración, adoraciones, eventos y parroquias" allow="geolocation; fullscreen"></iframe>
+</section>
+
 <footer class="wrap">
   <div class="social">
     <a class="btn ig" href="https://www.instagram.com/crisyotto" target="_blank" rel="noopener">
@@ -661,13 +682,16 @@ if(window.parent !== window){
 (function(){
   /* Las imágenes repetidas toman el src de su original, para no incrustarlas dos veces */
   document.querySelectorAll('img[data-ref]').forEach(function(i){ var o = document.getElementById(i.dataset.ref); if(o) i.src = o.src; });
-  var views = {inicio:document.getElementById('inicio'), bio:document.getElementById('bio'), galeria:document.getElementById('galeria')};
+  var views = {inicio:document.getElementById('inicio'), bio:document.getElementById('bio'), galeria:document.getElementById('galeria'), buscador:document.getElementById('buscador')};
+  var finder = document.getElementById('finderFrame'), foot = document.querySelector('body > footer');
   var items = [].slice.call(document.querySelectorAll('#galeria [data-open]'));
   document.getElementById('galCount').textContent = items.length;
   document.querySelectorAll('.galN').forEach(function(e){ e.textContent = items.length; });
   function show(e){
     var h = location.hash.slice(1), v = views[h] ? h : 'inicio';
     Object.keys(views).forEach(function(k){ views[k].hidden = k !== v; });
+    if(v === 'buscador' && !finder.getAttribute('src')) finder.src = 'grupos-carismaticos-madrid.html';   /* el buscador solo se carga al abrir su pestaña */
+    if(foot) foot.hidden = v === 'buscador';
     document.querySelectorAll('.tab').forEach(function(t){ t.setAttribute('aria-selected', String(t.getAttribute('aria-controls') === v)); });
     window.scrollTo(0, 0);
     if(e) avisa({cyo:'vista', vista:v});  /* la primera carga ya la cuenta crisyotto.es como visita */
