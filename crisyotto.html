@@ -237,7 +237,24 @@ h2{font:700 clamp(30px,4.4vw,42px)/1.1 var(--serif);margin:0 0 22px;letter-spaci
 .bio-photo{margin:0;border-radius:22px;overflow:hidden;box-shadow:var(--shadow);border:6px solid var(--paper);transform:rotate(1deg)}
 .bio-duo .card p.bio{margin:0 0 12px}
 .bio-duo .card p.antes{font-style:italic;padding-left:12px;border-left:3px solid var(--c)}
-.formato,.canales,.historia{margin-top:38px}
+.formato,.canales,.historia,.repertorio{margin-top:38px}
+/* Repertorio */
+.repertorio > p{max-width:760px}
+.rep-buscar{display:block;max-width:420px;margin:0 0 16px}
+.rep-buscar input{width:100%;box-sizing:border-box;padding:10px 14px;border:1px solid var(--line);border-radius:999px;background:var(--paper);color:var(--ink);font:inherit;font-size:16px}
+.rep-buscar input:focus-visible{outline:3px solid var(--otto);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.rep-grupos{columns:2 340px;column-gap:16px}
+.rep-grupo{break-inside:avoid;margin:0 0 14px;background:var(--paper);border-radius:16px;box-shadow:var(--shadow);border-left:5px solid var(--otto)}
+.rep-grupo:nth-child(odd){border-left-color:var(--cris)}
+.rep-grupo summary{cursor:pointer;padding:14px 18px;font:700 19px/1.25 var(--serif);list-style-position:inside}
+.rep-grupo summary:focus-visible{outline:3px solid var(--otto);outline-offset:2px;border-radius:12px}
+.rep-n{font:600 13px/1 var(--sans);color:var(--muted);margin-left:4px}
+.rep-grupo ul{list-style:none;margin:0;padding:0 18px 14px}
+.rep-grupo li{padding:6px 0;border-top:1px solid var(--line);font-size:15.5px;line-height:1.4}
+.rep-grupo li b{font-weight:650}
+.rep-grupo li span{color:var(--muted)}
+.rep-vacio{color:var(--muted)}
 .historia p{max-width:760px;margin:0 0 12px}
 .historia .lead{font:italic 400 clamp(20px,2.4vw,24px)/1.45 var(--serif)}
 .historia strong{color:var(--otto)}
@@ -501,6 +518,43 @@ footer small{color:var(--muted)}
     </div>
   </div>
 
+  <div class="repertorio" id="repertorio">
+    <h2>Nuestro repertorio</h2>
+    <p>Estas son las canciones que tocamos en Adoraciones, Horas Santas y alabanzas.</p>
+    <label class="rep-buscar"><span class="sr">Buscar canción o autor</span><input type="search" id="repQ" placeholder="Buscar canción o autor…" autocomplete="off"></label>
+    <div class="rep-grupos">
+      <details class="rep-grupo">
+        <summary>Invocación al Espíritu Santo <span class="rep-n">7</span></summary>
+        <ul><li><b>Espíritu Santo</b> <span>— Athenas</span></li><li><b>Inúndame (Espíritu Santo)</b> <span>— Athenas y Tobías Buteler</span></li><li><b>Ven, Espíritu, ven</b> <span>— Marco Barrientos</span></li><li><b>Muévete en mí</b> <span>— Koren Ruiz</span></li><li><b>Ruah</b> <span>— Benjamin y Thomas Pouzin (Glorious)</span></li><li><b>Ruah</b> <span>— Popular (Renovación Carismática)</span></li><li><b>Ven, Amor de Dios</b> <span>— Popular (Renovación Carismática)</span></li></ul>
+      </details>
+      <details class="rep-grupo">
+        <summary>Alabanza <span class="rep-n">10</span></summary>
+        <ul><li><b>Libre</b> <span>— Miel San Marcos</span></li><li><b>Vive Jesús</b> <span>— P. Lucas Casaert</span></li><li><b>Cuán grande es Dios</b> <span>— Chris Tomlin, Jesse Reeves y Ed Cash</span></li><li><b>Our God Reigns</b> <span>— Chris Tomlin, Cody Carnes y Martin Smith</span></li><li><b>Nuestro Dios reinará</b> <span>— Chris Tomlin, Cody Carnes y Martin Smith</span></li><li><b>El Nombre</b> <span>— Un Corazón</span></li><li><b>Tú, el único Rey</b> <span>— Ignacio Ozores (Tuyo)</span></li><li><b>Para que entre el Rey</b> <span>— Marcos Brunet</span></li><li><b>Digno de alabar</b> <span>— Jonatan Narváez</span></li><li><b>Hermoso nombre</b> <span>— Ben Fielding y Brooke Ligertwood</span></li></ul>
+      </details>
+      <details class="rep-grupo">
+        <summary>Adoración <span class="rep-n">14</span></summary>
+        <ul><li><b>Qué bien se está aquí</b> <span>— Athenas y Tobías Buteler</span></li><li><b>Te adoramos, Jesús</b> <span>— Athenas y Tobías Buteler</span></li><li><b>Jesús Eucaristía</b> <span>— Iván Molina (Abba Padre Band)</span></li><li><b>Jesús está vivo</b> <span>— Marco López</span></li><li><b>Milagro de amor tan infinito</b> <span>— María Constanza Fernández (Betsaida)</span></li><li><b>Al que está sentado en el trono</b> <span>— Marcos Brunet</span></li><li><b>No hay lugar más alto</b> <span>— Miel San Marcos</span></li><li><b>Vine a adorarte</b> <span>— Tim Hughes</span></li><li><b>Eres mi respirar</b> <span>— Marie Barnett</span></li><li><b>Oh Dios, tú eres mi Dios</b> <span>— Alejandro Ruiz Alonso</span></li><li><b>Yeshua</b> <span>— Marcos Brunet</span></li><li><b>Te necesito</b> <span>— Jon Carlo</span></li><li><b>No adoréis a nadie</b> <span>— Luis Alfredo Díaz</span></li><li><b>Estoy a la puerta y llamo</b> <span>— Jésed</span></li></ul>
+      </details>
+      <details class="rep-grupo">
+        <summary>Confianza y consuelo <span class="rep-n">9</span></summary>
+        <ul><li><b>Siempre te amaré</b> <span>— Athenas</span></li><li><b>La bondad de Dios</b> <span>— Ed Cash, Jason Ingram, Ben Fielding, Brian y Jenn Johnson</span></li><li><b>Tu fidelidad</b> <span>— Marcos Witt</span></li><li><b>El Señor es mi pastor, nada me falta</b> <span>— Nico Montero</span></li><li><b>No hay nada que pueda separarte de mi amor</b> <span>— Athenas y Tobías Buteler</span></li><li><b>No estoy sola (Tú estás aquí)</b> <span>— Desconocido</span></li><li><b>No temas</b> <span>— Jaime Olguín</span></li><li><b>Ven y descánsate</b> <span>— Josep Asunción</span></li><li><b>Él vendrá y te salvará</b> <span>— Seminario Pontificio Mayor de Santiago</span></li></ul>
+      </details>
+      <details class="rep-grupo">
+        <summary>Entrega y misión <span class="rep-n">4</span></summary>
+        <ul><li><b>Alma misionera</b> <span>— Popular (autoría discutida)</span></li><li><b>Yo quiero ser tu servidor</b> <span>— Félix del Valle</span></li><li><b>Tuyo soy</b> <span>— Misty Edwards</span></li><li><b>Enciéndeme</b> <span>— Hakuna Group Music</span></li></ul>
+      </details>
+      <details class="rep-grupo">
+        <summary>María y San José <span class="rep-n">7</span></summary>
+        <ul><li><b>Junto a ti, María</b> <span>— José Miguel Cubeles</span></li><li><b>Contigo, María</b> <span>— Athenas y Tobías Buteler</span></li><li><b>María, mírame</b> <span>— Adriana María Bezanilla (Betsaida)</span></li><li><b>¿Acaso no estoy yo aquí?</b> <span>— Athenas y Tobías Buteler</span></li><li><b>María, tu amor</b> <span>— Francisco Andrés Flores</span></li><li><b>Diario de María</b> <span>— Martín Valverde</span></li><li><b>Arde</b> <span>— Hakuna Group Music</span></li></ul>
+      </details>
+      <details class="rep-grupo">
+        <summary>Navidad <span class="rep-n">4</span></summary>
+        <ul><li><b>Temblando estaba de frío</b> <span>— Lope de Vega (letra)</span></li><li><b>Santa la noche</b> <span>— Adolphe Adam (música) y Placide Cappeau (letra)</span></li><li><b>Canción de cuna</b> <span>— Colegio Senara</span></li><li><b>Belén está muy cerca</b> <span>— Álvaro Torres (letra), sobre «Verano» de La Oreja de Van Gogh</span></li></ul>
+      </details>
+    </div>
+    <p class="rep-vacio" id="repVacio" hidden>Ninguna canción coincide con la búsqueda.</p>
+  </div>
+
   <div class="canales">
     <h2>Canales y enlaces oficiales</h2>
     <ul class="links">
@@ -674,6 +728,24 @@ if(window.parent !== window){
       try{ localStorage.setItem(KEY, JSON.stringify(items)); }catch(e){}
     })
     .catch(function(){ /* sin red o hoja privada: se queda lo guardado, o la sección oculta */ });
+})();
+</script>
+
+<script>
+/* Repertorio: buscador por título o autor (sin distinguir tildes ni mayúsculas) */
+(function(){
+  var q = document.getElementById('repQ'); if(!q) return;
+  var grupos = [].slice.call(document.querySelectorAll('.rep-grupo')), vacio = document.getElementById('repVacio');
+  var norm = function(s){ return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); };
+  q.addEventListener('input', function(){
+    var t = norm(q.value.trim()), total = 0;
+    grupos.forEach(function(g){
+      var n = 0;
+      g.querySelectorAll('li').forEach(function(li){ var ok = !t || norm(li.textContent).indexOf(t) >= 0; li.hidden = !ok; if(ok) n++; });
+      g.hidden = !!t && !n; g.open = !!t && n > 0; total += n;
+    });
+    vacio.hidden = !t || total > 0;
+  });
 })();
 </script>
 
